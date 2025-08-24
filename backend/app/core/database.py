@@ -4,20 +4,28 @@ SQLAlchemyデータベース設定
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import MetaData
+from sqlalchemy import create_engine
 from app.core.config import settings
+from app.models.base import Base
 
 
-# Convert sync URL to async
-database_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+# Convert sync URL to async for async operations
+async_database_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
-# Create async engine
+# Create async engine for app runtime
 engine = create_async_engine(
-    database_url,
+    async_database_url,
     pool_size=settings.DB_POOL_SIZE,
     max_overflow=settings.DB_MAX_OVERFLOW,
     echo=settings.DEBUG,  # SQLクエリのログ出力
+)
+
+# Create sync engine for Alembic migrations
+sync_engine = create_engine(
+    settings.DATABASE_URL,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
+    echo=settings.DEBUG,
 )
 
 # Create session maker
@@ -26,20 +34,6 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False
 )
-
-
-# Base class for models
-class Base(DeclarativeBase):
-    """Base class for all database models"""
-    metadata = MetaData(
-        naming_convention={
-            "ix": "ix_%(column_0_label)s",
-            "uq": "uq_%(table_name)s_%(column_0_name)s", 
-            "ck": "ck_%(table_name)s_%(constraint_name)s",
-            "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-            "pk": "pk_%(table_name)s"
-        }
-    )
 
 
 # Dependency to get DB session
