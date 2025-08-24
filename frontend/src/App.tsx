@@ -6,12 +6,16 @@ import { Members } from '@/pages/Members'
 import { Payments } from '@/pages/Payments'
 import { Reports } from '@/pages/Reports'
 import { Login } from '@/pages/Login'
+import { withAuth } from '@/contexts/AuthContext'
+
+// Protected components
+const ProtectedLayout = withAuth(Layout)
 
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={<Layout />}>
+      <Route path="/" element={<ProtectedLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="members" element={<Members />} />
         <Route path="payments" element={<Payments />} />

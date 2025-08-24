@@ -1,47 +1,14 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { TrendingUp, TrendingDown, Users, AlertTriangle } from 'lucide-react'
+import { dashboardAPI } from '@/services/api'
 import type { DashboardStats } from '@/types'
 import { cn } from '@/utils/cn'
-
-// Mock API call (replace with actual API)
-const fetchDashboardStats = async (): Promise<DashboardStats> => {
-  // This would be replaced with actual API call
-  return {
-    monthly_sales: 2856000,
-    active_members: 1247,
-    suspended_members: 89,
-    withdrawn_members: 34,
-    unpaid_count: 15,
-    total_revenue: 485600,
-    growth_rates: {
-      sales: 12.3,
-      active_members: 23,
-      suspended_members: 5,
-      withdrawn_members: 8,
-      revenue: 8.7
-    },
-    alerts: [
-      {
-        type: 'error',
-        message: '未決済アラート: 15件の未決済があります。月次処理前に確認してください。'
-      },
-      {
-        type: 'info',
-        message: '月次処理予定: 2025年8月31日に月次処理を実行予定です。'
-      },
-      {
-        type: 'warning',
-        message: '会員数更新: 新規会員が23名増加しました。'
-      }
-    ]
-  }
-}
 
 export const Dashboard: React.FC = () => {
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: fetchDashboardStats,
+    queryFn: dashboardAPI.getStats,
     refetchInterval: 5 * 60 * 1000, // 5分毎に更新
   })
 
