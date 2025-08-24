@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IROAS BOSS System</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .btn-gradient:hover { background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%); }
+        .sidebar-item.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .bg-gradient-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .text-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body className="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Icons (SVG Components)
+        const Icons = {
+            Dashboard: () => (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+            ),
+            Users: () => (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            ),
+            Organization: () => (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+            ),
+            FileText: () => (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            ),
+            Calculator: () => (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+            ),
+            LogOut: () => (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+            ),
+            Menu: () => (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            ),
+            Close: () => (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            )
+        };
+
+        // API設定
+        const API_BASE = 'http://127.0.0.1:8001/api/v1';
+        const api = axios.create({
+            baseURL: API_BASE,
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        // Interceptor for auth token
+        api.interceptors.request.use((config) => {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+            return config;
+        });
+
+        // ダミーコンポーネント
+        function Dashboard() {
+            return (
+                <div className="space-y-6 fade-in">
+                    <h1 className="text-3xl font-bold text-gray-800">ダッシュボード</h1>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <div className="text-sm text-gray-600">総会員数</div>
+                            <div className="text-2xl font-bold text-gray-800 mt-1">1,234</div>
+                        </div>
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <div className="text-sm text-gray-600">アクティブ会員</div>
+                            <div className="text-2xl font-bold text-green-600 mt-1">987</div>
+                        </div>
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <div className="text-sm text-gray-600">今月の売上</div>
+                            <div className="text-2xl font-bold text-blue-600 mt-1">¥2,500,000</div>
+                        </div>
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <div className="text-sm text-gray-600">報酬支払総額</div>
+                            <div className="text-2xl font-bold text-purple-600 mt-1">¥450,000</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function Organization() {
+            return (
+                <div className="space-y-6 fade-in">
+                    <h1 className="text-3xl font-bold text-gray-800">組織図</h1>
+                    <div className="bg-white rounded-xl shadow-sm p-6">
+                        <div className="mb-4">
+                            <h2 className="text-lg font-semibold mb-2">バイナリー組織構造</h2>
+                        </div>
+                        <div className="flex justify-center">
+                            <div className="text-center">
+                                <div className="bg-gradient-purple text-white rounded-lg p-4 mb-4 inline-block">
+                                    <div className="font-semibold">山田太郎 (400)</div>
+                                    <div className="text-sm">キング/クイーン</div>
+                                </div>
+                                <div className="flex justify-center gap-8 mt-4">
+                                    <div className="text-center">
+                                        <div className="bg-blue-500 text-white rounded-lg p-3 inline-block">
+                                            <div className="font-semibold">佐藤花子 (45100)</div>
+                                            <div className="text-sm">ナイト/デイム</div>
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-1">Left</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="bg-green-500 text-white rounded-lg p-3 inline-block">
+                                            <div className="font-semibold">田中一郎 (569400)</div>
+                                            <div className="text-sm">ロード/レディ</div>
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-1">Right</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="text-sm text-gray-600">組織レベル</div>
+                                <div className="text-xl font-bold text-gray-800">3段階</div>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="text-sm text-gray-600">左脚会員数</div>
+                                <div className="text-xl font-bold text-blue-600">15人</div>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="text-sm text-gray-600">右脚会員数</div>
+                                <div className="text-xl font-bold text-green-600">18人</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function CSVExport() {
+            const handleExportMembers = () => {
+                const csvContent = "data:text/csv;charset=utf-8," + 
+                    "IROAS会員番号,氏名,メール,称号,ステータス,登録日\n" +
+                    "400,山田太郎,yamada@example.com,キング/クイーン,アクティブ,2024-01-01\n" +
+                    "45100,佐藤花子,sato@example.com,ナイト/デイム,アクティブ,2024-01-15\n" +
+                    "569400,田中一郎,tanaka@example.com,ロード/レディ,休会,2024-02-01";
+                    
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "会員一覧_" + new Date().toISOString().slice(0,10) + ".csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const handleExportRewards = () => {
+                const csvContent = "data:text/csv;charset=utf-8," + 
+                    "会員番号,氏名,月次報酬,累計報酬,支払日\n" +
+                    "400,山田太郎,50000,500000,2024-01-31\n" +
+                    "45100,佐藤花子,30000,150000,2024-01-31\n" +
+                    "569400,田中一郎,25000,100000,2024-01-31";
+                    
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "報酬一覧_" + new Date().toISOString().slice(0,10) + ".csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            return (
+                <div className="space-y-6 fade-in">
+                    <h1 className="text-3xl font-bold text-gray-800">CSV出力</h1>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <h2 className="text-lg font-semibold mb-4">会員データ出力</h2>
+                            <p className="text-gray-600 mb-4">会員情報をCSVファイルで出力します。</p>
+                            <button 
+                                onClick={handleExportMembers}
+                                className="w-full btn-gradient text-white px-4 py-2 rounded-lg font-medium hover:opacity-90"
+                            >
+                                会員一覧をダウンロード
+                            </button>
+                        </div>
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <h2 className="text-lg font-semibold mb-4">報酬データ出力</h2>
+                            <p className="text-gray-600 mb-4">報酬情報をCSVファイルで出力します。</p>
+                            <button 
+                                onClick={handleExportRewards}
+                                className="w-full btn-gradient text-white px-4 py-2 rounded-lg font-medium hover:opacity-90"
+                            >
+                                報酬一覧をダウンロード
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function RewardCalculation() {
+            const [selectedMonth, setSelectedMonth] = useState('2024-01');
+            const [isCalculating, setIsCalculating] = useState(false);
+            const [calculationResult, setCalculationResult] = useState(null);
+
+            const handleCalculation = () => {
+                setIsCalculating(true);
+                // シミュレート計算処理
+                setTimeout(() => {
+                    setCalculationResult({
+                        totalMembers: 33,
+                        activeMembers: 28,
+                        totalSales: 2500000,
+                        totalRewards: 450000,
+                        memberRewards: [
+                            { memberId: '400', name: '山田太郎', reward: 50000, rank: 'キング/クイーン' },
+                            { memberId: '45100', name: '佐藤花子', reward: 30000, rank: 'ナイト/デイム' },
+                            { memberId: '569400', name: '田中一郎', reward: 25000, rank: 'ロード/レディ' }
+                        ]
+                    });
+                    setIsCalculating(false);
+                }, 2000);
+            };
+
+            return (
+                <div className="space-y-6 fade-in">
+                    <h1 className="text-3xl font-bold text-gray-800">報酬計算</h1>
+                    
+                    <div className="bg-white rounded-xl shadow-sm p-6">
+                        <h2 className="text-lg font-semibold mb-4">月次報酬計算</h2>
+                        <div className="flex gap-4 mb-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">計算対象月</label>
+                                <input
+                                    type="month"
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                />
+                            </div>
+                            <div className="flex items-end">
+                                <button
+                                    onClick={handleCalculation}
+                                    disabled={isCalculating}
+                                    className="btn-gradient text-white px-6 py-2 rounded-lg font-medium hover:opacity-90 disabled:opacity-50"
+                                >
+                                    {isCalculating ? '計算中...' : '報酬計算実行'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {calculationResult && (
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <h3 className="text-lg font-semibold mb-4">計算結果 ({selectedMonth})</h3>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="text-sm text-gray-600">対象会員数</div>
+                                    <div className="text-xl font-bold text-gray-800">{calculationResult.totalMembers}人</div>
+                                </div>
+                                <div className="bg-blue-50 rounded-lg p-4">
+                                    <div className="text-sm text-gray-600">アクティブ会員</div>
+                                    <div className="text-xl font-bold text-blue-600">{calculationResult.activeMembers}人</div>
+                                </div>
+                                <div className="bg-green-50 rounded-lg p-4">
+                                    <div className="text-sm text-gray-600">総売上</div>
+                                    <div className="text-xl font-bold text-green-600">¥{calculationResult.totalSales.toLocaleString()}</div>
+                                </div>
+                                <div className="bg-purple-50 rounded-lg p-4">
+                                    <div className="text-sm text-gray-600">総報酬</div>
+                                    <div className="text-xl font-bold text-purple-600">¥{calculationResult.totalRewards.toLocaleString()}</div>
+                                </div>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">会員番号</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">氏名</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">称号</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">報酬額</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {calculationResult.memberRewards.map((member) => (
+                                            <tr key={member.memberId}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{member.memberId}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{member.name}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{member.rank}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">¥{member.reward.toLocaleString()}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 会員管理コンポーネント
+        function Members() {
+            const [members, setMembers] = useState([]);
+            const [filteredMembers, setFilteredMembers] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [searchText, setSearchText] = useState('');
+            const [statusFilter, setStatusFilter] = useState('all');
+            const [showAddModal, setShowAddModal] = useState(false);
+            const [showEditModal, setShowEditModal] = useState(false);
+            const [editingMember, setEditingMember] = useState(null);
+            const [showColumnSettings, setShowColumnSettings] = useState(false);
+            const [viewMode, setViewMode] = useState('card'); // 'card' または 'table'
+            const [visibleColumns, setVisibleColumns] = useState({
+                status: true,
+                iroas_member_number: true,
+                name: true,
+                email: true,
+                title: true,
+                user_type: true,
+                subscription_plan: true,
+                payment_method: true,
+                registration_date: true,
+                withdrawal_date: false,
+                card_name: false,
+                name_kana: false,
+                phone: false,
+                gender: false,
+                prefecture: false,
+                postal_code: false,
+                address2: false,
+                address3: false,
+                upline_name: true,
+                referrer_name: true,
+                bank_name: false,
+                bank_code: false,
+                branch_name: false,
+                branch_code: false,
+                yucho_symbol: false,
+                yucho_number: false,
+                account_type: false,
+                account_number: false,
+                notes: false
+            });
+            const [formData, setFormData] = useState({
+                status: 'active',
+                iroas_member_number: '',
+                name: '',
+                email: '',
+                title: 'none',
+                user_type: 'normal',
+                subscription_plan: 'hero_plan',
+                payment_method: 'card',
+                registration_date: '2024-01-01',
+                withdrawal_date: '',
+                card_name: '',
+                name_kana: '',
+                phone: '',
+                gender: '',
+                prefecture: '',
+                postal_code: '',
+                address2: '',
+                address3: '',
+                upline_id: '',
+                upline_name: '',
+                referrer_id: '',
+                referrer_name: '',
+                bank_name: '',
+                bank_code: '',
+                branch_name: '',
+                branch_code: '',
+                yucho_symbol: '',
+                yucho_number: '',
+                account_type: '',
+                account_number: '',
+                notes: ''
+            });
+
+            const initialMembers = [
+                { 
+                    id: 1,
+                    iroas_member_number: '400',
+                    name: '山田太郎',
+                    name_kana: 'ヤマダタロウ',
+                    gender: 'male',
+                    email: 'yamada@example.com',
+                    phone: '090-1234-5678',
+                    postal_code: '100-0001',
+                    prefecture: '東京都',
+                    address2: '丸の内1-1-1 サンプルマンション101',
+                    address3: '',
+                    card_name: '山田太郎',
+                    title: 'knight_dame',
+                    user_type: 'normal',
+                    subscription_plan: 'hero_plan',
+                    payment_method: 'card',
+                    status: 'active',
+                    registration_date: '2024-01-15',
+                    withdrawal_date: '',
+                    upline_id: '2',
+                    upline_name: '佐藤花子',
+                    referrer_id: '2',
+                    referrer_name: '佐藤花子',
+                    bank_name: 'みずほ銀行',
+                    bank_code: '0001',
+                    branch_name: '新宿支店',
+                    branch_code: '001',
+                    account_type: '普通',
+                    account_number: '1234567',
+                    yucho_symbol: '',
+                    yucho_number: '',
+                    notes: 'サンプル会員1'
+                }
+            ];
+
+            useEffect(() => {
+                loadMembers();
+            }, []);
+
+            useEffect(() => {
+                filterMembers();
+            }, [searchText, statusFilter, members]);
+
+            const loadMembers = async () => {
+                try {
+                    setLoading(true);
+                    const response = await api.get('/members');
+                    const membersData = response.data.members || [];
+                    setMembers(membersData);
+                    setFilteredMembers(membersData);
+                } catch (error) {
+                    console.error('Failed to load members:', error);
+                    // フォールバック: 初期データを使用
+                    setMembers(initialMembers);
+                    setFilteredMembers(initialMembers);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const filterMembers = () => {
+                let filtered = [...members];
+                
+                if (searchText) {
+                    filtered = filtered.filter(member => 
+                        member.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                        member.email.toLowerCase().includes(searchText.toLowerCase()) ||
+                        member.iroas_member_number.toLowerCase().includes(searchText.toLowerCase()) ||
+                        member.name_kana.toLowerCase().includes(searchText.toLowerCase())
+                    );
+                }
+                
+                if (statusFilter !== 'all') {
+                    filtered = filtered.filter(member => member.status === statusFilter);
+                }
+                
+                setFilteredMembers(filtered);
+            };
+
+            const resetFormData = () => {
+                setFormData({
+                    status: 'active',
+                    iroas_member_number: '',
+                    name: '',
+                    email: '',
+                    title: 'none',
+                    user_type: 'normal',
+                    subscription_plan: 'hero_plan',
+                    payment_method: 'card',
+                    registration_date: '2024-01-01',
+                    withdrawal_date: '',
+                    card_name: '',
+                    name_kana: '',
+                    phone: '',
+                    gender: '',
+                    prefecture: '',
+                    postal_code: '',
+                    address2: '',
+                    address3: '',
+                    upline_id: '',
+                    upline_name: '',
+                    referrer_id: '',
+                    referrer_name: '',
+                    bank_name: '',
+                    bank_code: '',
+                    branch_name: '',
+                    branch_code: '',
+                    yucho_symbol: '',
+                    yucho_number: '',
+                    account_type: '',
+                    account_number: '',
+                    notes: ''
+                });
+            };
+
+            const handleAddMember = async () => {
+                try {
+                    const newMember = {
+                        id: Date.now(),
+                        ...formData
+                    };
+                    setMembers([...members, newMember]);
+                    resetFormData();
+                    setShowAddModal(false);
+                    alert('会員を登録しました');
+                } catch (error) {
+                    console.error('Failed to add member:', error);
+                    alert('登録に失敗しました');
+                }
+            };
+
+            const handleEditMember = async () => {
+                try {
+                    // フォームデータをAPI形式に変換
+                    const [familyName, givenName] = formData.name ? formData.name.split(' ') : ['', ''];
+                    const apiData = {
+                        family_name: familyName || formData.family_name,
+                        given_name: givenName || formData.given_name,
+                        family_name_kana: formData.family_name_kana,
+                        given_name_kana: formData.given_name_kana,
+                        email: formData.email,
+                        phone: formData.phone,
+                        postal_code: formData.postal_code,
+                        prefecture: formData.prefecture,
+                        city: formData.city,
+                        address_line: formData.address_line,
+                        address_line2: formData.address_line2,
+                        address_line3: formData.address_line3,
+                        status: formData.status,
+                        title: formData.title,
+                        user_type: formData.user_type,
+                        subscription_plan: formData.subscription_plan,
+                        payment_method: formData.payment_method,
+                        bank_name: formData.bank_name,
+                        branch_name: formData.branch_name,
+                        account_type: formData.account_type,
+                        account_number: formData.account_number,
+                        account_holder: formData.account_holder,
+                        bank_code: formData.bank_code,
+                        branch_code: formData.branch_code,
+                        yucho_symbol: formData.yucho_symbol,
+                        yucho_number: formData.yucho_number,
+                        notes: formData.notes
+                    };
+
+                    // 空の値を削除
+                    Object.keys(apiData).forEach(key => {
+                        if (apiData[key] === '' || apiData[key] === null || apiData[key] === undefined) {
+                            delete apiData[key];
+                        }
+                    });
+
+                    console.log('Sending update data:', apiData);
+                    
+                    // APIに更新リクエストを送信
+                    const response = await api.put(`/members/${editingMember.id}`, apiData);
+                    
+                    if (response.status === 200) {
+                        // データを再取得
+                        await loadMembers();
+                        setShowEditModal(false);
+                        setEditingMember(null);
+                        resetFormData();
+                        alert('会員情報を更新しました');
+                    }
+                } catch (error) {
+                    console.error('Failed to update member:', error);
+                    alert(`更新に失敗しました: ${error.response?.data?.detail || error.message}`);
+                }
+            };
+
+            const openEditModal = (member) => {
+                setEditingMember(member);
+                setFormData({
+                    status: member.status || 'active',
+                    iroas_member_number: member.iroas_member_number || '',
+                    name: member.name || '',
+                    email: member.email || '',
+                    title: member.title || 'none',
+                    user_type: member.user_type || 'normal',
+                    subscription_plan: member.subscription_plan || 'hero_plan',
+                    payment_method: member.payment_method || 'card',
+                    registration_date: member.registration_date || '2024-01-01',
+                    withdrawal_date: member.withdrawal_date || '',
+                    card_name: member.card_name || '',
+                    name_kana: member.name_kana || '',
+                    phone: member.phone || '',
+                    gender: member.gender || '',
+                    prefecture: member.prefecture || '',
+                    postal_code: member.postal_code || '',
+                    address2: member.address2 || '',
+                    address3: member.address3 || '',
+                    upline_id: member.upline_id || '',
+                    upline_name: member.upline_name || '',
+                    referrer_id: member.referrer_id || '',
+                    referrer_name: member.referrer_name || '',
+                    bank_name: member.bank_name || '',
+                    bank_code: member.bank_code || '',
+                    branch_name: member.branch_name || '',
+                    branch_code: member.branch_code || '',
+                    yucho_symbol: member.yucho_symbol || '',
+                    yucho_number: member.yucho_number || '',
+                    account_type: member.account_type || '',
+                    account_number: member.account_number || '',
+                    notes: member.notes || ''
+                });
+                setShowEditModal(true);
+            };
+
+            const handleDeleteMember = async (id) => {
+                if (confirm('この会員を削除しますか？')) {
+                    setMembers(members.filter(member => member.id !== id));
+                    alert('会員を削除しました');
+                }
+            };
+
+            const getStatusBadge = (status) => {
+                const styles = {
+                    active: 'bg-green-100 text-green-800',
+                    suspended: 'bg-yellow-100 text-yellow-800',
+                    withdrawn: 'bg-red-100 text-red-800'
+                };
+                const labels = {
+                    active: 'アクティブ',
+                    suspended: '休会中',
+                    withdrawn: '退会済'
+                };
+                return (
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+                        {labels[status] || status}
+                    </span>
+                );
+            };
+
+            const getTitleLabel = (title) => {
+                const labels = {
+                    none: '称号なし',
+                    knight_dame: 'ナイト/デイム',
+                    lord_lady: 'ロード/レディ',
+                    king_queen: 'キング/クイーン',
+                    emperor_empress: 'エンペラー/エンブレス'
+                };
+                return labels[title] || title;
+            };
+
+            const getUserTypeLabel = (type) => {
+                const labels = {
+                    normal: '通常',
+                    caution: '注意'
+                };
+                return labels[type] || type;
+            };
+
+            const getPaymentMethodLabel = (method) => {
+                const labels = {
+                    card: 'カード決済',
+                    bank_transfer: '口座振替',
+                    bank_remittance: '銀行振込',
+                    infocart: 'インフォカート'
+                };
+                return labels[method] || method;
+            };
+
+            // モーダルコンポーネント
+            const Modal = ({ title, onClose, onSubmit, children }) => (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                        <div className="flex justify-between items-center p-6 border-b border-gray-200 flex-shrink-0">
+                            <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl">
+                                ✕
+                            </button>
+                        </div>
+                        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="flex flex-col flex-1 min-h-0">
+                            <div className="flex-1 overflow-y-auto p-6" style={{'scrollBehavior': 'smooth'}}>
+                                {children}
+                            </div>
+                            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 flex-shrink-0 bg-gray-50">
+                                <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                    キャンセル
+                                </button>
+                                <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                                    保存
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-gray-500">読み込み中...</div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="space-y-6 fade-in">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-800">会員管理</h1>
+                            <p className="text-gray-600 mt-2">会員情報の検索と管理（{filteredMembers.length}件）</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                            >
+                                {viewMode === 'card' ? 'テーブル表示' : 'カード表示'}
+                            </button>
+                            {viewMode === 'table' && (
+                                <button 
+                                    onClick={() => setShowColumnSettings(true)}
+                                    className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                                >
+                                    表示設定
+                                </button>
+                            )}
+                            <button 
+                                onClick={() => setShowAddModal(true)}
+                                className="btn-gradient text-white px-6 py-2 rounded-lg"
+                            >
+                                新規会員登録
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 検索バー */}
+                    <div className="bg-white rounded-xl shadow-sm p-4">
+                        <div className="flex gap-4">
+                            <input
+                                type="text"
+                                placeholder="会員名、メールアドレス、会員IDで検索..."
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                            />
+                            <select 
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                            >
+                                <option value="all">すべてのステータス</option>
+                                <option value="active">アクティブ</option>
+                                <option value="suspended">休会中</option>
+                                <option value="withdrawn">退会済</option>
+                            </select>
+                            <button 
+                                onClick={() => { setSearchText(''); setStatusFilter('all'); }}
+                                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+                            >
+                                リセット
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 会員リスト */}
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        {filteredMembers.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500">
+                                <p>該当する会員が見つかりません。</p>
+                            </div>
+                        ) : viewMode === 'card' ? (
+                            <div className="p-4">
+                                <div className="grid gap-4">
+                                    {filteredMembers.map((member) => (
+                                        <div key={member.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-center">
+                                                    <div className="flex-shrink-0 h-12 w-12">
+                                                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white font-semibold text-lg">
+                                                            {member.name.charAt(0)}
+                                                        </div>
+                                                    </div>
+                                                    <div className="ml-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="text-lg font-medium text-gray-900">
+                                                                {member.name} ({member.iroas_member_number})
+                                                            </div>
+                                                            {getStatusBadge(member.status)}
+                                                        </div>
+                                                        <div className="text-sm text-gray-600 mt-1">{member.email}</div>
+                                                        {member.name_kana && <div className="text-sm text-gray-400 mt-1">{member.name_kana}</div>}
+                                                        
+                                                        <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
+                                                            <div>称号: {getTitleLabel(member.title)}</div>
+                                                            <div>タイプ: {getUserTypeLabel(member.user_type)}</div>
+                                                            <div>プラン: {member.subscription_plan === 'hero_plan' ? 'ヒーロープラン' : 'テストプラン'}</div>
+                                                            <div>決済: {getPaymentMethodLabel(member.payment_method)}</div>
+                                                        </div>
+                                                        
+                                                        <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
+                                                            <div>登録日: {member.registration_date}</div>
+                                                            {member.withdrawal_date && <div>退会日: {member.withdrawal_date}</div>}
+                                                            {member.card_name && <div>カード名義: {member.card_name}</div>}
+                                                            {member.phone && <div>電話: {member.phone}</div>}
+                                                        </div>
+                                                        
+                                                        {member.gender && (
+                                                            <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
+                                                                <div>性別: {member.gender === 'male' ? '男性' : member.gender === 'female' ? '女性' : member.gender}</div>
+                                                                {member.prefecture && <div>都道府県: {member.prefecture}</div>}
+                                                                {member.postal_code && <div>郵便番号: {member.postal_code}</div>}
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {(member.address2 || member.address3) && (
+                                                            <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
+                                                                {member.address2 && <div>住所2: {member.address2}</div>}
+                                                                {member.address3 && <div>住所3: {member.address3}</div>}
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {(member.upline_name || member.referrer_name) && (
+                                                            <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                                                                {member.upline_name && <div>直上者: {member.upline_name} ({member.upline_id})</div>}
+                                                                {member.referrer_name && <div>紹介者: {member.referrer_name} ({member.referrer_id})</div>}
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {(member.bank_name || member.yucho_symbol || member.account_number) && (
+                                                            <div className="mt-2 text-sm text-gray-500">
+                                                                <div className="font-medium">振込先情報:</div>
+                                                                <div className="flex flex-wrap gap-4 mt-1">
+                                                                    {member.bank_name && <div>銀行: {member.bank_name} ({member.bank_code})</div>}
+                                                                    {member.branch_name && <div>支店: {member.branch_name} ({member.branch_code})</div>}
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-4 mt-1">
+                                                                    {member.yucho_symbol && <div>ゆうちょ記号: {member.yucho_symbol}</div>}
+                                                                    {member.yucho_number && <div>ゆうちょ番号: {member.yucho_number}</div>}
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-4 mt-1">
+                                                                    {member.account_type && <div>口座種別: {member.account_type}</div>}
+                                                                    {member.account_number && <div>口座番号: {member.account_number}</div>}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {member.notes && (
+                                                            <div className="mt-2 text-sm text-gray-500">
+                                                                <div className="font-medium">備考:</div>
+                                                                <div className="mt-1">{member.notes}</div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => openEditModal(member)}
+                                                        className="text-indigo-600 hover:text-indigo-900 px-3 py-1 rounded border hover:bg-indigo-50 text-sm"
+                                                    >
+                                                        編集
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            if (confirm('本当に削除しますか？')) {
+                                                                const updatedMembers = members.filter(m => m.id !== member.id);
+                                                                setMembers(updatedMembers);
+                                                            }
+                                                        }}
+                                                        className="text-red-600 hover:text-red-900 px-3 py-1 rounded border hover:bg-red-50 text-sm"
+                                                    >
+                                                        削除
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                <thead className="bg-gray-50 border-b border-gray-200">
+                                    <tr>
+                                        {visibleColumns.status && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">ステータス</th>}
+                                        {visibleColumns.iroas_member_number && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">会員番号</th>}
+                                        {visibleColumns.name && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">氏名</th>}
+                                        {visibleColumns.email && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">メール</th>}
+                                        {visibleColumns.name_kana && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">氏名カナ</th>}
+                                        {visibleColumns.title && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">称号</th>}
+                                        {visibleColumns.user_type && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">タイプ</th>}
+                                        {visibleColumns.subscription_plan && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">プラン</th>}
+                                        {visibleColumns.payment_method && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">決済方法</th>}
+                                        {visibleColumns.registration_date && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">登録日</th>}
+                                        {visibleColumns.withdrawal_date && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">退会日</th>}
+                                        {visibleColumns.card_name && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">カード名義</th>}
+                                        {visibleColumns.phone && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">電話番号</th>}
+                                        {visibleColumns.gender && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">性別</th>}
+                                        {visibleColumns.prefecture && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">都道府県</th>}
+                                        {visibleColumns.postal_code && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">郵便番号</th>}
+                                        {visibleColumns.address2 && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">住所2</th>}
+                                        {visibleColumns.address3 && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">住所3</th>}
+                                        {visibleColumns.upline_name && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">直上者</th>}
+                                        {visibleColumns.referrer_name && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">紹介者</th>}
+                                        {visibleColumns.bank_name && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">銀行名</th>}
+                                        {visibleColumns.bank_code && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">銀行コード</th>}
+                                        {visibleColumns.branch_name && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">支店名</th>}
+                                        {visibleColumns.branch_code && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">支店コード</th>}
+                                        {visibleColumns.yucho_symbol && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">ゆうちょ記号</th>}
+                                        {visibleColumns.yucho_number && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">ゆうちょ番号</th>}
+                                        {visibleColumns.account_type && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">口座種別</th>}
+                                        {visibleColumns.account_number && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">口座番号</th>}
+                                        {visibleColumns.notes && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">備考</th>}
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {filteredMembers.map((member) => (
+                                        <tr key={member.id} className="hover:bg-gray-50 transition">
+                                            {visibleColumns.status && <td className="px-3 py-3 text-sm">{getStatusBadge(member.status)}</td>}
+                                            {visibleColumns.iroas_member_number && <td className="px-3 py-3 text-sm text-gray-900">{member.iroas_member_number}</td>}
+                                            {visibleColumns.name && <td className="px-3 py-3 text-sm font-medium text-gray-900">{member.name}</td>}
+                                            {visibleColumns.email && <td className="px-3 py-3 text-sm text-gray-600">{member.email}</td>}
+                                            {visibleColumns.name_kana && <td className="px-3 py-3 text-sm text-gray-500">{member.name_kana}</td>}
+                                            {visibleColumns.title && <td className="px-3 py-3 text-sm text-gray-900">{getTitleLabel(member.title)}</td>}
+                                            {visibleColumns.user_type && <td className="px-3 py-3 text-sm">
+                                                <span className={`px-2 py-1 text-xs rounded ${member.user_type === 'caution' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                                                    {getUserTypeLabel(member.user_type)}
+                                                </span>
+                                            </td>}
+                                            {visibleColumns.subscription_plan && <td className="px-3 py-3 text-sm text-gray-900">{member.subscription_plan === 'hero_plan' ? 'ヒーロープラン' : 'テストプラン'}</td>}
+                                            {visibleColumns.payment_method && <td className="px-3 py-3 text-sm text-gray-900">{getPaymentMethodLabel(member.payment_method)}</td>}
+                                            {visibleColumns.registration_date && <td className="px-3 py-3 text-sm text-gray-600">{member.registration_date}</td>}
+                                            {visibleColumns.withdrawal_date && <td className="px-3 py-3 text-sm text-gray-600">{member.withdrawal_date || '-'}</td>}
+                                            {visibleColumns.card_name && <td className="px-3 py-3 text-sm text-gray-600">{member.card_name || '-'}</td>}
+                                            {visibleColumns.phone && <td className="px-3 py-3 text-sm text-gray-600">{member.phone || '-'}</td>}
+                                            {visibleColumns.gender && <td className="px-3 py-3 text-sm text-gray-600">{member.gender === 'male' ? '男性' : member.gender === 'female' ? '女性' : '-'}</td>}
+                                            {visibleColumns.prefecture && <td className="px-3 py-3 text-sm text-gray-600">{member.prefecture || '-'}</td>}
+                                            {visibleColumns.postal_code && <td className="px-3 py-3 text-sm text-gray-600">{member.postal_code || '-'}</td>}
+                                            {visibleColumns.address2 && <td className="px-3 py-3 text-sm text-gray-600">{member.address2 || '-'}</td>}
+                                            {visibleColumns.address3 && <td className="px-3 py-3 text-sm text-gray-600">{member.address3 || '-'}</td>}
+                                            {visibleColumns.upline_name && <td className="px-3 py-3 text-sm text-gray-600">{member.upline_name || '-'}</td>}
+                                            {visibleColumns.referrer_name && <td className="px-3 py-3 text-sm text-gray-600">{member.referrer_name || '-'}</td>}
+                                            {visibleColumns.bank_name && <td className="px-3 py-3 text-sm text-gray-600">{member.bank_name || '-'}</td>}
+                                            {visibleColumns.bank_code && <td className="px-3 py-3 text-sm text-gray-600">{member.bank_code || '-'}</td>}
+                                            {visibleColumns.branch_name && <td className="px-3 py-3 text-sm text-gray-600">{member.branch_name || '-'}</td>}
+                                            {visibleColumns.branch_code && <td className="px-3 py-3 text-sm text-gray-600">{member.branch_code || '-'}</td>}
+                                            {visibleColumns.yucho_symbol && <td className="px-3 py-3 text-sm text-gray-600">{member.yucho_symbol || '-'}</td>}
+                                            {visibleColumns.yucho_number && <td className="px-3 py-3 text-sm text-gray-600">{member.yucho_number || '-'}</td>}
+                                            {visibleColumns.account_type && <td className="px-3 py-3 text-sm text-gray-600">{member.account_type || '-'}</td>}
+                                            {visibleColumns.account_number && <td className="px-3 py-3 text-sm text-gray-600">{member.account_number || '-'}</td>}
+                                            {visibleColumns.notes && <td className="px-3 py-3 text-sm text-gray-600">{member.notes || '-'}</td>}
+                                            <td className="px-3 py-3 text-sm space-x-1">
+                                                <button 
+                                                    onClick={() => openEditModal(member)}
+                                                    className="text-indigo-600 hover:text-indigo-900 px-2 py-1 rounded border hover:bg-indigo-50 text-xs"
+                                                >
+                                                    編集
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        if (confirm('本当に削除しますか？')) {
+                                                            const updatedMembers = members.filter(m => m.id !== member.id);
+                                                            setMembers(updatedMembers);
+                                                        }
+                                                    }}
+                                                    className="text-red-600 hover:text-red-900 px-2 py-1 rounded border hover:bg-red-50 text-xs"
+                                                >
+                                                    削除
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 新規登録モーダル */}
+                    {showAddModal && (
+                        <Modal 
+                            title="新規会員登録" 
+                            onClose={() => setShowAddModal(false)}
+                            onSubmit={handleAddMember}
+                        >
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+                                    <select
+                                        value={formData.status}
+                                        onChange={(e) => setFormData({...formData, status: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="active">アクティブ</option>
+                                        <option value="suspended">休会中</option>
+                                        <option value="withdrawn">退会済</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">IROAS会員番号 *</label>
+                                    <input
+                                        type="number"
+                                        value={formData.iroas_member_number}
+                                        onChange={(e) => setFormData({...formData, iroas_member_number: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        placeholder="例：400"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">氏名 *</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス *</label>
+                                    <input
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">称号</label>
+                                    <select
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="none">称号なし</option>
+                                        <option value="knight_dame">ナイト/デイム</option>
+                                        <option value="lord_lady">ロード/レディ</option>
+                                        <option value="king_queen">キング/クイーン</option>
+                                        <option value="emperor_empress">エンペラー/エンブレス</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ユーザータイプ</label>
+                                    <select
+                                        value={formData.user_type}
+                                        onChange={(e) => setFormData({...formData, user_type: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="normal">通常</option>
+                                        <option value="caution">注意</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">加入プラン</label>
+                                    <select
+                                        value={formData.subscription_plan}
+                                        onChange={(e) => setFormData({...formData, subscription_plan: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="hero_plan">ヒーロープラン</option>
+                                        <option value="test_plan">テストプラン</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">決済方法</label>
+                                    <select
+                                        value={formData.payment_method}
+                                        onChange={(e) => setFormData({...formData, payment_method: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="card">カード決済</option>
+                                        <option value="bank_transfer">口座振替</option>
+                                        <option value="bank_remittance">銀行振込</option>
+                                        <option value="infocart">インフォカート</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">登録日</label>
+                                    <input
+                                        type="text"
+                                        value={formData.registration_date}
+                                        onChange={(e) => setFormData({...formData, registration_date: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        placeholder="2024-01-01"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">退会日</label>
+                                    <input
+                                        type="text"
+                                        value={formData.withdrawal_date}
+                                        onChange={(e) => setFormData({...formData, withdrawal_date: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        placeholder="2024-12-31"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">会員カード名義</label>
+                                    <input
+                                        type="text"
+                                        value={formData.card_name}
+                                        onChange={(e) => setFormData({...formData, card_name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ｶﾅ</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name_kana}
+                                        onChange={(e) => setFormData({...formData, name_kana: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
+                                    <input
+                                        type="tel"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">性別</label>
+                                    <select
+                                        value={formData.gender}
+                                        onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="">選択してください</option>
+                                        <option value="male">男性</option>
+                                        <option value="female">女性</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">都道府県</label>
+                                    <input
+                                        type="text"
+                                        value={formData.prefecture}
+                                        onChange={(e) => setFormData({...formData, prefecture: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">郵便番号</label>
+                                    <input
+                                        type="text"
+                                        value={formData.postal_code}
+                                        onChange={(e) => setFormData({...formData, postal_code: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        placeholder="123-4567"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">住所2</label>
+                                    <input
+                                        type="text"
+                                        value={formData.address2}
+                                        onChange={(e) => setFormData({...formData, address2: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">住所3</label>
+                                    <input
+                                        type="text"
+                                        value={formData.address3}
+                                        onChange={(e) => setFormData({...formData, address3: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">直上者ID</label>
+                                    <input
+                                        type="text"
+                                        value={formData.upline_id}
+                                        onChange={(e) => setFormData({...formData, upline_id: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">直上者名</label>
+                                    <input
+                                        type="text"
+                                        value={formData.upline_name}
+                                        onChange={(e) => setFormData({...formData, upline_name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">紹介者ID</label>
+                                    <input
+                                        type="text"
+                                        value={formData.referrer_id}
+                                        onChange={(e) => setFormData({...formData, referrer_id: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">紹介者名</label>
+                                    <input
+                                        type="text"
+                                        value={formData.referrer_name}
+                                        onChange={(e) => setFormData({...formData, referrer_name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">報酬振込先の銀行名および銀行コード</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={formData.bank_name}
+                                            onChange={(e) => setFormData({...formData, bank_name: e.target.value})}
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                            placeholder="銀行名"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={formData.bank_code}
+                                            onChange={(e) => setFormData({...formData, bank_code: e.target.value})}
+                                            className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                            placeholder="コード"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">報酬振込先の支店名および支店コード</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={formData.branch_name}
+                                            onChange={(e) => setFormData({...formData, branch_name: e.target.value})}
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                            placeholder="支店名"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={formData.branch_code}
+                                            onChange={(e) => setFormData({...formData, branch_code: e.target.value})}
+                                            className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                            placeholder="コード"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ゆうちょの場合の記号</label>
+                                    <input
+                                        type="text"
+                                        value={formData.yucho_symbol}
+                                        onChange={(e) => setFormData({...formData, yucho_symbol: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ゆうちょの場合の番号</label>
+                                    <input
+                                        type="text"
+                                        value={formData.yucho_number}
+                                        onChange={(e) => setFormData({...formData, yucho_number: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">口座種別</label>
+                                    <select
+                                        value={formData.account_type}
+                                        onChange={(e) => setFormData({...formData, account_type: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="">選択してください</option>
+                                        <option value="普通">普通</option>
+                                        <option value="当座">当座</option>
+                                        <option value="貯蓄">貯蓄</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">口座番号</label>
+                                    <input
+                                        type="text"
+                                        value={formData.account_number}
+                                        onChange={(e) => setFormData({...formData, account_number: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">備考</label>
+                                    <textarea
+                                        value={formData.notes}
+                                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        rows="3"
+                                    />
+                                </div>
+                            </div>
+                        </Modal>
+                    )}
+
+                    {/* 編集モーダル */}
+                    {showEditModal && (
+                        <Modal 
+                            title="会員情報編集" 
+                            onClose={() => setShowEditModal(false)}
+                            onSubmit={handleEditMember}
+                        >
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* 編集フォーム - 全項目編集可能 */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+                                    <select
+                                        value={formData.status}
+                                        onChange={(e) => setFormData({...formData, status: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="active">アクティブ</option>
+                                        <option value="suspended">休会中</option>
+                                        <option value="withdrawn">退会済</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">IROAS会員番号 *</label>
+                                    <input
+                                        type="number"
+                                        value={formData.iroas_member_number}
+                                        onChange={(e) => setFormData({...formData, iroas_member_number: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        placeholder="例：400"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">氏名 *</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス *</label>
+                                    <input
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">称号</label>
+                                    <select
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="none">称号なし</option>
+                                        <option value="knight_dame">ナイト/デイム</option>
+                                        <option value="lord_lady">ロード/レディ</option>
+                                        <option value="king_queen">キング/クイーン</option>
+                                        <option value="emperor_empress">エンペラー/エンブレス</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ユーザータイプ</label>
+                                    <select
+                                        value={formData.user_type}
+                                        onChange={(e) => setFormData({...formData, user_type: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="normal">通常</option>
+                                        <option value="caution">注意</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">加入プラン</label>
+                                    <select
+                                        value={formData.subscription_plan}
+                                        onChange={(e) => setFormData({...formData, subscription_plan: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="hero_plan">ヒーロープラン</option>
+                                        <option value="test_plan">テストプラン</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">決済方法</label>
+                                    <select
+                                        value={formData.payment_method}
+                                        onChange={(e) => setFormData({...formData, payment_method: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="card">カード決済</option>
+                                        <option value="bank_transfer">口座振替</option>
+                                        <option value="bank_remittance">銀行振込</option>
+                                        <option value="infocart">インフォカート</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">登録日</label>
+                                    <input
+                                        type="text"
+                                        value={formData.registration_date}
+                                        onChange={(e) => setFormData({...formData, registration_date: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">退会日</label>
+                                    <input
+                                        type="text"
+                                        value={formData.withdrawal_date}
+                                        onChange={(e) => setFormData({...formData, withdrawal_date: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">会員カード名義</label>
+                                    <input
+                                        type="text"
+                                        value={formData.card_name}
+                                        onChange={(e) => setFormData({...formData, card_name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ｶﾅ</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name_kana}
+                                        onChange={(e) => setFormData({...formData, name_kana: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
+                                    <input
+                                        type="tel"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">性別</label>
+                                    <select
+                                        value={formData.gender}
+                                        onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="">選択してください</option>
+                                        <option value="male">男性</option>
+                                        <option value="female">女性</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">都道府県</label>
+                                    <input
+                                        type="text"
+                                        value={formData.prefecture}
+                                        onChange={(e) => setFormData({...formData, prefecture: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">郵便番号</label>
+                                    <input
+                                        type="text"
+                                        value={formData.postal_code}
+                                        onChange={(e) => setFormData({...formData, postal_code: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        placeholder="123-4567"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">住所2</label>
+                                    <input
+                                        type="text"
+                                        value={formData.address2}
+                                        onChange={(e) => setFormData({...formData, address2: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">住所3</label>
+                                    <input
+                                        type="text"
+                                        value={formData.address3}
+                                        onChange={(e) => setFormData({...formData, address3: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">直上者ID</label>
+                                    <input
+                                        type="text"
+                                        value={formData.upline_id}
+                                        onChange={(e) => setFormData({...formData, upline_id: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">直上者名</label>
+                                    <input
+                                        type="text"
+                                        value={formData.upline_name}
+                                        onChange={(e) => setFormData({...formData, upline_name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">紹介者ID</label>
+                                    <input
+                                        type="text"
+                                        value={formData.referrer_id}
+                                        onChange={(e) => setFormData({...formData, referrer_id: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">紹介者名</label>
+                                    <input
+                                        type="text"
+                                        value={formData.referrer_name}
+                                        onChange={(e) => setFormData({...formData, referrer_name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">報酬振込先の銀行名および銀行コード</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={formData.bank_name}
+                                            onChange={(e) => setFormData({...formData, bank_name: e.target.value})}
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                            placeholder="銀行名"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={formData.bank_code}
+                                            onChange={(e) => setFormData({...formData, bank_code: e.target.value})}
+                                            className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                            placeholder="コード"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">報酬振込先の支店名および支店コード</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={formData.branch_name}
+                                            onChange={(e) => setFormData({...formData, branch_name: e.target.value})}
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                            placeholder="支店名"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={formData.branch_code}
+                                            onChange={(e) => setFormData({...formData, branch_code: e.target.value})}
+                                            className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                            placeholder="コード"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ゆうちょの場合の記号</label>
+                                    <input
+                                        type="text"
+                                        value={formData.yucho_symbol}
+                                        onChange={(e) => setFormData({...formData, yucho_symbol: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ゆうちょの場合の番号</label>
+                                    <input
+                                        type="text"
+                                        value={formData.yucho_number}
+                                        onChange={(e) => setFormData({...formData, yucho_number: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">口座種別</label>
+                                    <select
+                                        value={formData.account_type}
+                                        onChange={(e) => setFormData({...formData, account_type: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    >
+                                        <option value="">選択してください</option>
+                                        <option value="普通">普通</option>
+                                        <option value="当座">当座</option>
+                                        <option value="貯蓄">貯蓄</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">口座番号</label>
+                                    <input
+                                        type="text"
+                                        value={formData.account_number}
+                                        onChange={(e) => setFormData({...formData, account_number: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                    />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">備考</label>
+                                    <textarea
+                                        value={formData.notes}
+                                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                                        rows="3"
+                                    />
+                                </div>
+                            </div>
+                        </Modal>
+                    )}
+
+                    {/* 列設定モーダル */}
+                    {showColumnSettings && (
+                        <Modal 
+                            title="表示項目設定" 
+                            onClose={() => setShowColumnSettings(false)}
+                            onSubmit={() => setShowColumnSettings(false)}
+                        >
+                            <div className="grid grid-cols-2 gap-4">
+                                {Object.entries({
+                                    status: 'ステータス',
+                                    iroas_member_number: 'IROAS会員番号',
+                                    name: '氏名',
+                                    email: 'メールアドレス',
+                                    name_kana: '氏名（カナ）',
+                                    title: '称号',
+                                    user_type: 'ユーザータイプ',
+                                    subscription_plan: '加入プラン',
+                                    payment_method: '決済方法',
+                                    registration_date: '登録日',
+                                    withdrawal_date: '退会日',
+                                    card_name: '会員カード名義',
+                                    phone: '電話番号',
+                                    gender: '性別',
+                                    prefecture: '都道府県',
+                                    postal_code: '郵便番号',
+                                    address2: '住所2',
+                                    address3: '住所3',
+                                    upline_name: '直上者名',
+                                    referrer_name: '紹介者名',
+                                    bank_name: '報酬振込先の銀行名',
+                                    bank_code: '銀行コード',
+                                    branch_name: '支店名',
+                                    branch_code: '支店コード',
+                                    yucho_symbol: 'ゆうちょの記号',
+                                    yucho_number: 'ゆうちょの番号',
+                                    account_type: '口座種別',
+                                    account_number: '口座番号',
+                                    notes: '備考'
+                                }).map(([key, label]) => (
+                                    <div key={key} className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            id={key}
+                                            checked={visibleColumns[key]}
+                                            onChange={(e) => setVisibleColumns({
+                                                ...visibleColumns,
+                                                [key]: e.target.checked
+                                            })}
+                                            className="mr-2"
+                                        />
+                                        <label htmlFor={key} className="text-sm text-gray-700">
+                                            {label}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </Modal>
+                    )}
+                </div>
+            );
+        }
+
+        // ログインコンポーネント
+        function Login({ onLogin }) {
+            const [email, setEmail] = useState('admin@iroas.com');
+            const [password, setPassword] = useState('password123');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError('');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('username', email);
+                    formData.append('password', password);
+                    
+                    const response = await api.post('/auth/token', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                    
+                    localStorage.setItem('access_token', response.data.access_token);
+                    onLogin(response.data);
+                } catch (error) {
+                    console.error('Login error:', error);
+                    setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-purple flex items-center justify-center">
+                    <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+                        <div className="text-center mb-8">
+                            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-white text-2xl font-bold">B</span>
+                            </div>
+                            <h1 className="text-2xl font-bold text-gray-800">IROAS BOSS System</h1>
+                            <p className="text-gray-600 mt-2">管理者ログイン</p>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">メールアドレス</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                                    required
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">パスワード</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                                    required
+                                />
+                            </div>
+
+                            {error && (
+                                <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                                    {error}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-gradient-purple text-white py-2 px-4 rounded-lg font-medium hover:opacity-90 transition disabled:opacity-50"
+                            >
+                                {loading ? 'ログイン中...' : 'ログイン'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        // メインアプリケーション
+        function App() {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [currentPage, setCurrentPage] = useState('dashboard');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+            useEffect(() => {
+                const token = localStorage.getItem('access_token');
+                if (token) {
+                    setIsLoggedIn(true);
+                }
+            }, []);
+
+            const handleLogin = (data) => {
+                setIsLoggedIn(true);
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem('access_token');
+                setIsLoggedIn(false);
+            };
+
+            const menuItems = [
+                { id: 'dashboard', label: 'ダッシュボード', icon: Icons.Dashboard },
+                { id: 'members', label: '会員管理', icon: Icons.Users },
+                { id: 'organization', label: '組織図', icon: Icons.Organization },
+                { id: 'csv', label: 'CSV出力', icon: Icons.FileText },
+                { id: 'rewards', label: '報酬計算', icon: Icons.Calculator },
+            ];
+
+            const renderPage = () => {
+                switch(currentPage) {
+                    case 'dashboard':
+                        return <Dashboard />;
+                    case 'members':
+                        return <Members />;
+                    case 'organization':
+                        return <Organization />;
+                    case 'csv':
+                        return <CSVExport />;
+                    case 'rewards':
+                        return <RewardCalculation />;
+                    default:
+                        return <Dashboard />;
+                }
+            };
+
+            if (!isLoggedIn) {
+                return <Login onLogin={handleLogin} />;
+            }
+
+            return (
+                <div className="flex h-screen bg-gray-50">
+                    {/* サイドバー */}
+                    <div className={`${isSidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 bg-white shadow-lg`}>
+                        <div className="flex flex-col h-full">
+                            {/* ロゴ */}
+                            <div className="p-6 border-b border-gray-200">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
+                                            B
+                                        </div>
+                                        {isSidebarOpen && (
+                                            <span className="ml-3 text-xl font-bold text-gray-800">BOSS</span>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                        className="text-gray-500 hover:text-gray-700"
+                                    >
+                                        {isSidebarOpen ? <Icons.Close /> : <Icons.Menu />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* メニュー */}
+                            <nav className="flex-1 p-4 space-y-2">
+                                {menuItems.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => setCurrentPage(item.id)}
+                                        className={`w-full flex items-center px-4 py-3 rounded-lg transition sidebar-item ${
+                                            currentPage === item.id
+                                                ? 'bg-purple-50 text-purple-600 active'
+                                                : 'text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <item.icon />
+                                        {isSidebarOpen && (
+                                            <span className="ml-3">{item.label}</span>
+                                        )}
+                                    </button>
+                                ))}
+                            </nav>
+
+                            {/* ログアウト */}
+                            <div className="p-4 border-t border-gray-200">
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition"
+                                >
+                                    <Icons.LogOut />
+                                    {isSidebarOpen && (
+                                        <span className="ml-3">ログアウト</span>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* メインコンテンツ */}
+                    <div className="flex-1 overflow-auto">
+                        <div className="p-8">
+                            {renderPage()}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // React 18対応
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
