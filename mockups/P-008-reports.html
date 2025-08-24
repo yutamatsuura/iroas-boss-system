@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-008 レポートページ - BOSS System</title>
+    <style>
+        :root {
+            /* Modern Corporate Color Palette */
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --background-color: #f8fafc;
+            --surface-color: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            
+            /* Dark Mode Colors */
+            --dark-background: #0f172a;
+            --dark-surface: #1e293b;
+            --dark-border: #334155;
+            --dark-text-primary: #f1f5f9;
+            --dark-text-secondary: #cbd5e1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+
+        /* Dark Mode */
+        body.dark {
+            background-color: var(--dark-background);
+            color: var(--dark-text-primary);
+        }
+
+        body.dark .card {
+            background-color: var(--dark-surface);
+            border-color: var(--dark-border);
+        }
+
+        body.dark .sidebar {
+            background-color: var(--dark-surface);
+            border-color: var(--dark-border);
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* Header */
+        .header {
+            background: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--background-color);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+            padding: 2rem 0;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+
+        .sidebar h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .nav-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Content Area */
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .page-description {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Report Controls */
+        .report-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-select,
+        .form-input {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+        }
+
+        .form-select:focus,
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table th {
+            background-color: var(--background-color);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .table tr:hover {
+            background-color: var(--background-color);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 9999px;
+        }
+
+        .status-paid {
+            background-color: rgba(5, 150, 105, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-pending {
+            background-color: rgba(217, 119, 6, 0.1);
+            color: var(--warning-color);
+        }
+
+        .status-overdue {
+            background-color: rgba(220, 38, 38, 0.1);
+            color: var(--danger-color);
+        }
+
+        /* Charts Placeholder */
+        .chart-container {
+            height: 300px;
+            background: linear-gradient(45deg, var(--background-color), var(--border-color));
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-card.success {
+            background: linear-gradient(135deg, var(--success-color), #047857);
+        }
+
+        .summary-card.warning {
+            background: linear-gradient(135deg, var(--warning-color), #b45309);
+        }
+
+        .summary-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: relative;
+                top: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            
+            .page-actions {
+                justify-content: flex-start;
+            }
+            
+            .report-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--border-color) 25%, transparent 50%, var(--border-color) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">BOSS System</div>
+                <div class="header-controls">
+                    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                        🌙
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <h2>レポート管理</h2>
+                <nav>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="#monthly-rewards" class="nav-link active">
+                                <span class="nav-icon">📊</span>
+                                月次報酬明細
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#payment-list" class="nav-link">
+                                <span class="nav-icon">💰</span>
+                                支払一覧
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#payment-status" class="nav-link">
+                                <span class="nav-icon">📈</span>
+                                決済状況レポート
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#annual-report" class="nav-link">
+                                <span class="nav-icon">📋</span>
+                                年間支払調書
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#export" class="nav-link">
+                                <span class="nav-icon">📤</span>
+                                データ出力
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="content-area">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">レポート・明細管理</h1>
+                        <p class="page-description">月次報酬明細や各種レポートを生成し、透明性の高い情報提供を実現</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline" onclick="refreshData()">
+                            🔄 更新
+                        </button>
+                        <button class="btn btn-primary" onclick="exportReport()">
+                            📤 一括出力
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-value">¥2,486,000</div>
+                        <div class="summary-label">今月の総支払額</div>
+                    </div>
+                    <div class="summary-card success">
+                        <div class="summary-value">156</div>
+                        <div class="summary-label">完了済み支払件数</div>
+                    </div>
+                    <div class="summary-card warning">
+                        <div class="summary-value">12</div>
+                        <div class="summary-label">保留中の支払</div>
+                    </div>
+                </div>
+
+                <!-- Report Controls -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">レポート条件設定</h2>
+                    </div>
+                    <div class="report-controls">
+                        <div class="control-group">
+                            <label class="control-label">対象期間</label>
+                            <select class="form-select" id="period-select">
+                                <option value="current-month">今月 (2024年8月)</option>
+                                <option value="last-month">先月 (2024年7月)</option>
+                                <option value="quarter">四半期</option>
+                                <option value="year">年間</option>
+                                <option value="custom">カスタム期間</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">支払タイプ</label>
+                            <select class="form-select" id="payment-type">
+                                <option value="all">すべて</option>
+                                <option value="bonus">ボーナス</option>
+                                <option value="commission">コミッション</option>
+                                <option value="referral">紹介報酬</option>
+                                <option value="special">特別報酬</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">ステータス</label>
+                            <select class="form-select" id="status-filter">
+                                <option value="all">すべて</option>
+                                <option value="paid">支払済み</option>
+                                <option value="pending">保留中</option>
+                                <option value="processing">処理中</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">メンバー検索</label>
+                            <input type="text" class="form-input" placeholder="メンバー名またはID" id="member-search">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Rewards Detail -->
+                <div class="card" id="monthly-rewards">
+                    <div class="card-header">
+                        <h2 class="card-title">月次報酬明細</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-outline" onclick="exportPDF('monthly')">
+                                📄 PDF出力
+                            </button>
+                            <button class="btn btn-outline" onclick="exportCSV('monthly')">
+                                📊 CSV出力
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>メンバーID</th>
+                                    <th>メンバー名</th>
+                                    <th>基本報酬</th>
+                                    <th>成果ボーナス</th>
+                                    <th>紹介ボーナス</th>
+                                    <th>特別ボーナス</th>
+                                    <th>前月繰越</th>
+                                    <th>控除額</th>
+                                    <th>振込予定額</th>
+                                    <th>振込予定日</th>
+                                    <th>ステータス</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>M-001</td>
+                                    <td>田中太郎</td>
+                                    <td>¥150,000</td>
+                                    <td>¥45,000</td>
+                                    <td>¥12,000</td>
+                                    <td>¥8,000</td>
+                                    <td>¥0</td>
+                                    <td>¥3,200</td>
+                                    <td>¥211,800</td>
+                                    <td>2024-08-25</td>
+                                    <td><span class="status-badge status-paid">支払済み</span></td>
+                                </tr>
+                                <tr>
+                                    <td>M-002</td>
+                                    <td>佐藤花子</td>
+                                    <td>¥120,000</td>
+                                    <td>¥32,000</td>
+                                    <td>¥24,000</td>
+                                    <td>¥0</td>
+                                    <td>¥5,000</td>
+                                    <td>¥2,800</td>
+                                    <td>¥178,200</td>
+                                    <td>2024-08-25</td>
+                                    <td><span class="status-badge status-pending">処理中</span></td>
+                                </tr>
+                                <tr>
+                                    <td>M-003</td>
+                                    <td>山田次郎</td>
+                                    <td>¥180,000</td>
+                                    <td>¥68,000</td>
+                                    <td>¥36,000</td>
+                                    <td>¥15,000</td>
+                                    <td>¥0</td>
+                                    <td>¥4,500</td>
+                                    <td>¥294,500</td>
+                                    <td>2024-08-25</td>
+                                    <td><span class="status-badge status-paid">支払済み</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Payment Status Chart -->
+                <div class="card" id="payment-status">
+                    <div class="card-header">
+                        <h2 class="card-title">決済状況レポート</h2>
+                    </div>
+                    <div class="chart-container">
+                        <p>決済状況グラフ (Chart.js統合予定)</p>
+                    </div>
+                </div>
+
+                <!-- Annual Report -->
+                <div class="card" id="annual-report">
+                    <div class="card-header">
+                        <h2 class="card-title">年間支払調書</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-primary" onclick="generateAnnualReport()">
+                                📊 調書生成
+                            </button>
+                        </div>
+                    </div>
+                    <div class="report-controls">
+                        <div class="control-group">
+                            <label class="control-label">対象年度</label>
+                            <select class="form-select">
+                                <option value="2024">2024年</option>
+                                <option value="2023">2023年</option>
+                                <option value="2022">2022年</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">出力形式</label>
+                            <select class="form-select">
+                                <option value="pdf">PDF形式</option>
+                                <option value="excel">Excel形式</option>
+                                <option value="csv">CSV形式</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <p>年間支払調書プレビュー</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const themeButton = document.querySelector('.theme-toggle');
+            themeButton.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+        }
+
+        // Navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Report Functions
+        function refreshData() {
+            // Simulate data refresh
+            document.querySelector('.content-area').classList.add('loading');
+            setTimeout(() => {
+                document.querySelector('.content-area').classList.remove('loading');
+            }, 1500);
+        }
+
+        function exportReport() {
+            alert('レポートの一括出力を開始します...');
+        }
+
+        function exportPDF(type) {
+            alert(`${type}レポートのPDF出力を開始します...`);
+        }
+
+        function exportCSV(type) {
+            alert(`${type}レポートのCSV出力を開始します...`);
+        }
+
+        function generateAnnualReport() {
+            alert('年間支払調書の生成を開始します...');
+        }
+
+        // Form Controls
+        document.getElementById('period-select').addEventListener('change', function() {
+            console.log('期間変更:', this.value);
+            // Implement period filter logic
+        });
+
+        document.getElementById('payment-type').addEventListener('change', function() {
+            console.log('支払タイプ変更:', this.value);
+            // Implement payment type filter logic
+        });
+
+        document.getElementById('status-filter').addEventListener('change', function() {
+            console.log('ステータス変更:', this.value);
+            // Implement status filter logic
+        });
+
+        document.getElementById('member-search').addEventListener('input', function() {
+            console.log('メンバー検索:', this.value);
+            // Implement member search logic
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('P-008 レポートページ初期化完了');
+        });
+    </script>
+
+    <!--
+    【CF_06引き継ぎ情報】
+    UI要件: 月次報酬明細・支払一覧・決済状況レポート・年間支払調書の包括的レポート管理
+    必要API: GET /api/reports/monthly - 月次報酬明細取得
+    必要API: GET /api/reports/payments - 支払一覧取得
+    必要API: GET /api/reports/payment-status - 決済状況取得
+    必要API: GET /api/reports/annual/{year} - 年間支払調書取得
+    必要API: POST /api/reports/export - レポート出力（PDF/CSV）
+    入力データ: { period: string, paymentType: string, status: string, memberId?: string }
+    出力データ: { reports: Array, summary: Object, statistics: Object }
+    UI文脈: フィルタリング・ソート・出力・期間選択機能
+    特記事項: PDF/CSV出力、リアルタイム更新、チャート統合予定
+    -->

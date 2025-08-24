@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-001 ダッシュボード - BOSS System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* サイドバー */
+        .sidebar {
+            width: 260px;
+            background-color: #1e293b;
+            color: white;
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        .nav-item.active {
+            background-color: #2563eb;
+        }
+
+        .nav-item:hover {
+            background-color: #334155;
+        }
+
+        .nav-item a {
+            color: inherit;
+            text-decoration: none;
+            display: block;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        .header {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            color: #1e293b;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 1rem;
+        }
+
+        /* 統計カード */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #2563eb;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-title {
+            font-size: 0.875rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .stat-change.positive {
+            color: #059669;
+        }
+
+        .stat-change.negative {
+            color: #dc2626;
+        }
+
+        /* チャートエリア */
+        .chart-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .chart-placeholder {
+            height: 300px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-style: italic;
+        }
+
+        /* アラートセクション */
+        .alerts-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .alerts-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+
+        .alert-item {
+            padding: 1rem;
+            border-left: 4px solid #f59e0b;
+            background: #fffbeb;
+            border-radius: 0.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .alert-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .alert-item.error {
+            border-left-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .alert-item.info {
+            border-left-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .chart-section,
+            .alerts-section {
+                padding: 1.5rem;
+            }
+        }
+
+        /* ダークモード対応 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #0f172a;
+                color: #e2e8f0;
+            }
+
+            .header,
+            .stat-card,
+            .chart-section,
+            .alerts-section {
+                background-color: #1e293b;
+                border-color: #334155;
+            }
+
+            .stat-value {
+                color: #e2e8f0;
+            }
+
+            .chart-placeholder {
+                background: linear-gradient(135deg, #334155 0%, #475569 100%);
+                color: #94a3b8;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!--
+    【CF_06引き継ぎ情報】
+    UI要件: ダッシュボード統計情報の表示と月次処理状況の把握
+    必要API: 
+      - GET /api/dashboard/stats - ダッシュボード統計データ取得
+      - GET /api/members/summary - 会員状況サマリー取得
+      - GET /api/payments/unpaid - 未決済件数取得
+      - GET /api/reports/monthly-revenue - 月次報酬総額取得
+    入力データ: { date_range?: string, filter?: string }
+    出力データ: { 
+      monthly_sales: number, 
+      active_members: number, 
+      suspended_members: number, 
+      withdrawn_members: number, 
+      unpaid_count: number, 
+      total_revenue: number,
+      growth_rate: number,
+      alerts: Array<{type: string, message: string}>
+    }
+    UI文脈: 管理者ダッシュボードのメイン画面、月次処理前の確認用
+    特記事項: リアルタイム更新機能、アラート通知機能
+    -->
+
+    <div class="container">
+        <!-- サイドバー -->
+        <nav class="sidebar">
+            <div class="logo">BOSS System</div>
+            <ul class="nav-menu">
+                <li class="nav-item active">
+                    <a href="#dashboard">📊 ダッシュボード</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#members">👥 会員管理</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#payments">💳 決済管理</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#reports">📈 レポート</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#settings">⚙️ 設定</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- ヘッダー -->
+            <header class="header">
+                <h1>ダッシュボード</h1>
+                <p>会員状況と決済状況を一覧表示し、月次処理の現状を把握します</p>
+            </header>
+
+            <!-- 統計カード -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">当月売上</div>
+                    <div class="stat-value">¥2,856,000</div>
+                    <div class="stat-change positive">
+                        ↗ +12.3% 前月比
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">アクティブ会員</div>
+                    <div class="stat-value">1,247</div>
+                    <div class="stat-change positive">
+                        ↗ +23名 前月比
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">休会会員</div>
+                    <div class="stat-value">89</div>
+                    <div class="stat-change negative">
+                        ↘ +5名 前月比
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">退会会員</div>
+                    <div class="stat-value">34</div>
+                    <div class="stat-change negative">
+                        ↘ +8名 前月比
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">未決済件数</div>
+                    <div class="stat-value">15</div>
+                    <div class="stat-change negative">
+                        ⚠️ 要確認
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">今月の報酬総額</div>
+                    <div class="stat-value">¥485,600</div>
+                    <div class="stat-change positive">
+                        ↗ +8.7% 前月比
+                    </div>
+                </div>
+            </section>
+
+            <!-- チャートセクション -->
+            <section class="chart-section">
+                <div class="chart-header">
+                    <h2 class="chart-title">月次売上推移</h2>
+                </div>
+                <div class="chart-placeholder">
+                    ※ チャートライブラリ統合後に売上推移グラフを表示
+                </div>
+            </section>
+
+            <!-- アラートセクション -->
+            <section class="alerts-section">
+                <h2 class="alerts-title">重要な通知</h2>
+                <div class="alert-item error">
+                    <strong>未決済アラート:</strong> 15件の未決済があります。月次処理前に確認してください。
+                </div>
+                <div class="alert-item info">
+                    <strong>月次処理予定:</strong> 2025年8月31日に月次処理を実行予定です。
+                </div>
+                <div class="alert-item">
+                    <strong>会員数更新:</strong> 新規会員が23名増加しました。
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // 基本的なインタラクション
+        document.addEventListener('DOMContentLoaded', function() {
+            // サイドバーナビゲーション
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // 統計カードのホバーエフェクト
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-4px)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+
+            // レスポンシブメニュー（モバイル対応）
+            if (window.innerWidth <= 768) {
+                const sidebar = document.querySelector('.sidebar');
+                const mainContent = document.querySelector('.main-content');
+                
+                // タッチジェスチャーでサイドバー表示
+                let startX = 0;
+                document.addEventListener('touchstart', e => {
+                    startX = e.touches[0].clientX;
+                });
+                
+                document.addEventListener('touchmove', e => {
+                    if (startX < 20 && e.touches[0].clientX > startX + 50) {
+                        sidebar.style.transform = 'translateX(0)';
+                    }
+                });
+                
+                document.addEventListener('touchend', e => {
+                    if (e.changedTouches[0].clientX < sidebar.offsetWidth / 2) {
+                        sidebar.style.transform = 'translateX(-100%)';
+                    }
+                });
+            }
+
+            // ダッシュボードデータの自動更新（実装例）
+            function updateDashboardData() {
+                // 実際のAPI呼び出しはCF_06で実装
+                console.log('ダッシュボードデータを更新中...');
+                
+                // モックデータの更新例
+                setTimeout(() => {
+                    const statValues = document.querySelectorAll('.stat-value');
+                    // ここで実際のAPIから取得したデータを反映
+                    console.log('ダッシュボードデータ更新完了');
+                }, 1000);
+            }
+
+            // 5分毎の自動更新
+            setInterval(updateDashboardData, 300000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-005 報酬計算システム - BOSS System</title>
+    
+    <!--
+    【CF_06引き継ぎ情報】
+    UI要件: 月次報酬計算の実行、進捗表示、結果確認、CSV出力機能
+    必要API: POST /api/rewards/calculate, GET /api/rewards/summary/{period}, GET /api/rewards/details/{period}, GET /api/rewards/carryover/{period}
+    入力データ: { period: string (YYYY-MM), calculation_type: string }
+    出力データ: { calculation_id: number, total_members: number, payment_targets: number, carryover_targets: number, total_amount: decimal }
+    UI文脈: 計算実行→進捗表示→結果表示→詳細確認の流れ
+    特記事項: 長時間処理のため非同期処理とWebSocket通信による進捗更新が必要
+    -->
+    
+    <style>
+        /* リセットCSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* グローバルスタイル */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8fafc;
+            color: #374151;
+            line-height: 1.6;
+        }
+
+        /* コンテナ */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ヘッダー */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2563eb;
+        }
+
+        .page-title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #374151;
+            margin: 32px 0;
+            text-align: center;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            padding: 24px 0;
+        }
+
+        /* カードコンポーネント */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        /* 計算実行セクション */
+        .calculation-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 16px;
+            align-items: end;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* ボタン */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e40af;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 2px solid #e5e7eb;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        /* 進捗インジケーター */
+        .progress-section {
+            display: none;
+            margin: 24px 0;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb, #3b82f6);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-weight: 500;
+            color: #6b7280;
+        }
+
+        /* 結果サマリー */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .summary-item {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .summary-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2563eb;
+            margin-bottom: 4px;
+        }
+
+        .summary-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        /* テーブル */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .table th {
+            background: #f8fafc;
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table td {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .table tr:hover {
+            background: #f8fafc;
+        }
+
+        /* ステータスバッジ */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-paid {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-carryover {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        /* タブナビゲーション */
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab-button.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+
+            .calculation-form {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .page-title {
+                font-size: 1.875rem;
+            }
+
+            .card {
+                padding: 24px;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .table {
+                font-size: 0.875rem;
+            }
+
+            .tab-nav {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+
+        /* アニメーション */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* ローディングスピナー */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 50%;
+            border-top-color: #2563eb;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">BOSS System</div>
+                <div style="font-size: 0.875rem; color: #6b7280;">
+                    計算期間: 2024年7月分 (2024/06/25 - 2024/07/25)
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <div class="container">
+            <h1 class="page-title">報酬計算システム</h1>
+
+            <!-- 計算実行セクション -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">計算実行</h2>
+                </div>
+
+                <form class="calculation-form" id="calculationForm">
+                    <div class="form-group">
+                        <label for="period" class="form-label">計算期間</label>
+                        <input type="month" id="period" class="input-field" value="2024-07" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="calculationType" class="form-label">計算タイプ</label>
+                        <select id="calculationType" class="input-field" required>
+                            <option value="full">完全計算</option>
+                            <option value="partial">部分計算</option>
+                            <option value="test">テスト計算</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="executeBtn">
+                        <span class="btn-text">計算実行</span>
+                        <div class="loading-spinner" style="display: none;"></div>
+                    </button>
+                </form>
+
+                <!-- 進捗表示 -->
+                <div class="progress-section" id="progressSection">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">計算を準備中...</div>
+                </div>
+            </div>
+
+            <!-- 結果サマリー -->
+            <div class="card" id="summarySection" style="display: none;">
+                <div class="card-header">
+                    <h2 class="card-title">計算結果サマリー</h2>
+                    <button class="btn btn-secondary" id="exportBtn">
+                        📊 CSV出力
+                    </button>
+                </div>
+
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-value" id="totalMembers">0</div>
+                        <div class="summary-label">計算対象メンバー</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" id="paymentTargets">0</div>
+                        <div class="summary-label">支払対象者</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" id="carryoverTargets">0</div>
+                        <div class="summary-label">繰越対象者</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" id="totalAmount">¥0</div>
+                        <div class="summary-label">総支払額</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 詳細結果 -->
+            <div class="card" id="detailsSection" style="display: none;">
+                <div class="card-header">
+                    <h2 class="card-title">詳細結果</h2>
+                </div>
+
+                <!-- タブナビゲーション -->
+                <div class="tab-nav">
+                    <button class="tab-button active" data-tab="payment">支払対象者</button>
+                    <button class="tab-button" data-tab="carryover">繰越対象者</button>
+                    <button class="tab-button" data-tab="bonus">ボーナス詳細</button>
+                </div>
+
+                <!-- 支払対象者タブ -->
+                <div class="tab-content active" id="paymentTab">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>メンバーID</th>
+                                    <th>メンバー名</th>
+                                    <th>ダイレクト</th>
+                                    <th>バイナリー</th>
+                                    <th>パワー</th>
+                                    <th>タイトル</th>
+                                    <th>合計報酬</th>
+                                    <th>支払額</th>
+                                    <th>ステータス</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentTableBody">
+                                <!-- データはJavaScriptで動的に挿入 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 繰越対象者タブ -->
+                <div class="tab-content" id="carryoverTab">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>メンバーID</th>
+                                    <th>メンバー名</th>
+                                    <th>今月報酬</th>
+                                    <th>前月繰越</th>
+                                    <th>合計額</th>
+                                    <th>繰越額</th>
+                                    <th>ステータス</th>
+                                </tr>
+                            </thead>
+                            <tbody id="carryoverTableBody">
+                                <!-- データはJavaScriptで動的に挿入 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ボーナス詳細タブ -->
+                <div class="tab-content" id="bonusTab">
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <div class="summary-value" style="color: #16a34a;">¥1,234,500</div>
+                            <div class="summary-label">ダイレクトボーナス総額</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" style="color: #2563eb;">¥987,300</div>
+                            <div class="summary-label">バイナリーボーナス総額</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" style="color: #ea580c;">¥456,200</div>
+                            <div class="summary-label">パワーボーナス総額</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" style="color: #7c3aed;">¥123,000</div>
+                            <div class="summary-label">タイトルボーナス総額</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // タブ機能
+        function initTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+                    
+                    // アクティブタブをリセット
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // 新しいタブをアクティブに
+                    button.classList.add('active');
+                    document.getElementById(tabName + 'Tab').classList.add('active');
+                });
+            });
+        }
+
+        // 進捗バー更新
+        function updateProgress(percent, text) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            progressFill.style.width = percent + '%';
+            progressText.textContent = text;
+        }
+
+        // 計算実行シミュレーション
+        function simulateCalculation() {
+            const progressSection = document.getElementById('progressSection');
+            const executeBtn = document.getElementById('executeBtn');
+            const btnText = executeBtn.querySelector('.btn-text');
+            const spinner = executeBtn.querySelector('.loading-spinner');
+            
+            // ボタン状態変更
+            executeBtn.disabled = true;
+            btnText.textContent = '計算中...';
+            spinner.style.display = 'inline-block';
+            
+            // 進捗表示
+            progressSection.classList.add('active');
+            
+            // 進捗シミュレーション
+            let progress = 0;
+            const steps = [
+                { percent: 10, text: 'メンバーデータを読み込み中...' },
+                { percent: 25, text: 'ダイレクトボーナスを計算中...' },
+                { percent: 45, text: 'バイナリーボーナスを計算中...' },
+                { percent: 65, text: 'パワーボーナスを計算中...' },
+                { percent: 80, text: 'タイトルボーナスを計算中...' },
+                { percent: 95, text: '繰越処理を実行中...' },
+                { percent: 100, text: '計算完了！' }
+            ];
+            
+            let currentStep = 0;
+            const interval = setInterval(() => {
+                if (currentStep < steps.length) {
+                    updateProgress(steps[currentStep].percent, steps[currentStep].text);
+                    currentStep++;
+                } else {
+                    clearInterval(interval);
+                    
+                    // 結果表示
+                    setTimeout(() => {
+                        showResults();
+                        
+                        // ボタン状態リセット
+                        executeBtn.disabled = false;
+                        btnText.textContent = '再計算';
+                        spinner.style.display = 'none';
+                        progressSection.classList.remove('active');
+                    }, 1000);
+                }
+            }, 800);
+        }
+
+        // 結果表示
+        function showResults() {
+            const summarySection = document.getElementById('summarySection');
+            const detailsSection = document.getElementById('detailsSection');
+            
+            // サマリーデータ更新
+            document.getElementById('totalMembers').textContent = '1,234';
+            document.getElementById('paymentTargets').textContent = '456';
+            document.getElementById('carryoverTargets').textContent = '778';
+            document.getElementById('totalAmount').textContent = '¥2,801,000';
+            
+            // テーブルデータ挿入（サンプルデータ）
+            const paymentData = [
+                { id: 'M001', name: '田中太郎', direct: 25000, binary: 15000, power: 8000, title: 5000, total: 53000, payment: 53000 },
+                { id: 'M002', name: '佐藤花子', direct: 18000, binary: 22000, power: 12000, title: 0, total: 52000, payment: 52000 },
+                { id: 'M003', name: '高橋次郎', direct: 12000, binary: 8000, power: 15000, title: 3000, total: 38000, payment: 38000 }
+            ];
+            
+            const paymentTableBody = document.getElementById('paymentTableBody');
+            paymentTableBody.innerHTML = paymentData.map(member => `
+                <tr>
+                    <td>${member.id}</td>
+                    <td>${member.name}</td>
+                    <td>¥${member.direct.toLocaleString()}</td>
+                    <td>¥${member.binary.toLocaleString()}</td>
+                    <td>¥${member.power.toLocaleString()}</td>
+                    <td>¥${member.title.toLocaleString()}</td>
+                    <td><strong>¥${member.total.toLocaleString()}</strong></td>
+                    <td><strong>¥${member.payment.toLocaleString()}</strong></td>
+                    <td><span class="status-badge status-paid">支払済</span></td>
+                </tr>
+            `).join('');
+            
+            const carryoverData = [
+                { id: 'M004', name: '鈴木一郎', current: 3200, carryover: 1500, total: 4700, status: '繰越' },
+                { id: 'M005', name: '山田美子', current: 2800, carryover: 800, total: 3600, status: '繰越' }
+            ];
+            
+            const carryoverTableBody = document.getElementById('carryoverTableBody');
+            carryoverTableBody.innerHTML = carryoverData.map(member => `
+                <tr>
+                    <td>${member.id}</td>
+                    <td>${member.name}</td>
+                    <td>¥${member.current.toLocaleString()}</td>
+                    <td>¥${member.carryover.toLocaleString()}</td>
+                    <td>¥${member.total.toLocaleString()}</td>
+                    <td>¥${member.total.toLocaleString()}</td>
+                    <td><span class="status-badge status-carryover">${member.status}</span></td>
+                </tr>
+            `).join('');
+            
+            // セクション表示
+            summarySection.style.display = 'block';
+            detailsSection.style.display = 'block';
+            
+            // アニメーション
+            summarySection.classList.add('fade-in');
+            detailsSection.classList.add('fade-in');
+        }
+
+        // フォーム送信処理
+        document.getElementById('calculationForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            simulateCalculation();
+        });
+
+        // CSV出力処理
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            // 実際の実装では、計算結果データをCSVファイルとしてダウンロード
+            alert('CSV出力機能：実装時はサーバーAPIを呼び出してCSVファイルを生成・ダウンロードします');
+        });
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            initTabs();
+        });
+    </script>
+</body>
+</html>

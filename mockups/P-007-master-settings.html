@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-007 マスター設定 | BOSS System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #2563eb;
+            --primary-blue-hover: #1d4ed8;
+            --secondary-gray: #64748b;
+            --background-light: #f8fafc;
+            --background-white: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --success-green: #10b981;
+            --warning-orange: #f59e0b;
+            --error-red: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Noto Sans JP', sans-serif;
+            background-color: var(--background-light);
+            color: var(--text-primary);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .header {
+            background: var(--background-white);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .breadcrumb {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .breadcrumb a {
+            color: var(--primary-blue);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .section-card {
+            background: var(--background-white);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-hover) 100%);
+            color: white;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-description {
+            margin-top: 8px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .section-content {
+            padding: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .form-label .required {
+            color: var(--error-red);
+            margin-left: 4px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: var(--background-white);
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-suffix {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .form-help {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: var(--background-light);
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: var(--background-light);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-gray);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-success {
+            background: var(--success-green);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--warning-orange);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-sm {
+            padding: 8px 14px;
+            font-size: 12px;
+            min-width: 80px;
+        }
+
+        .btn-icon {
+            padding: 10px;
+            min-width: auto;
+            border-radius: 6px;
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+            padding: 20px 0;
+            border-top: 1px solid var(--border-color);
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .actions-left, .actions-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .history-section {
+            margin-top: 24px;
+        }
+
+        .history-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-blue);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .history-toggle:hover {
+            text-decoration: underline;
+        }
+
+        .history-content {
+            display: none;
+        }
+
+        .history-content.show {
+            display: block;
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            border: 1px solid #93c5fd;
+            color: #1e40af;
+        }
+
+        .alert-warning {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            color: #92400e;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            border-top-color: var(--primary-blue);
+            animation: spin 0.8s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            
+            .header-content {
+                padding: 12px 16px;
+            }
+            
+            .page-title {
+                font-size: 20px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .actions-left, .actions-right {
+                justify-content: center;
+            }
+            
+            .data-table {
+                font-size: 12px;
+            }
+            
+            .data-table th, .data-table td {
+                padding: 12px 8px;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-light: #0f172a;
+                --background-white: #1e293b;
+                --text-primary: #f1f5f9;
+                --text-secondary: #94a3b8;
+                --border-color: #334155;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- CF_06引き継ぎ情報
+    UI要件: 報酬体系パラメータの設定・管理・履歴確認
+    必要API: 
+      - GET /api/master-settings/rewards - 現在の報酬設定取得
+      - POST /api/master-settings/rewards - 報酬設定更新
+      - GET /api/master-settings/history - 設定変更履歴取得
+      - GET /api/master-settings/titles - タイトル一覧取得
+      - POST /api/master-settings/titles - タイトル別報酬設定
+    入力データ: { 
+      bonus_rates: { referral: number, sales: number, retention: number },
+      title_rewards: [{ title_id: string, amount: number }],
+      minimum_payment: number,
+      change_reason: string 
+    }
+    出力データ: { 
+      success: boolean, 
+      message: string, 
+      settings: object,
+      history: [{ id: string, changes: object, timestamp: string, user: string }]
+    }
+    UI文脈: 設定変更時は確認モーダル表示、履歴はトグルで表示切替
+    特記事項: 設定変更は即座に反映、変更理由入力必須、履歴は無制限保存
+    -->
+
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <h1 class="page-title">
+                    <i class="fas fa-cogs"></i>
+                    マスター設定
+                </h1>
+                <div class="breadcrumb">
+                    <a href="/dashboard">ダッシュボード</a> / 
+                    <a href="/settings">システム設定</a> / 
+                    マスター設定
+                </div>
+            </div>
+            <div class="actions-right">
+                <button class="btn btn-secondary btn-sm" onclick="exportSettings()">
+                    <i class="fas fa-download"></i>
+                    設定エクスポート
+                </button>
+                <button class="btn btn-warning btn-sm" onclick="resetToDefault()">
+                    <i class="fas fa-undo"></i>
+                    デフォルト復元
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            報酬体系の変更は即座にシステム全体に反映されます。慎重に設定を変更してください。
+        </div>
+
+        <div class="main-content">
+            <!-- ボーナス率設定セクション -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-percentage"></i>
+                        ボーナス率設定
+                    </div>
+                    <div class="section-description">
+                        紹介・売上・継続に関するボーナス率を設定します
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">
+                                紹介ボーナス率<span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-input" id="referralRate" 
+                                       value="15" step="0.1" min="0" max="100">
+                                <span class="input-suffix">%</span>
+                            </div>
+                            <div class="form-help">
+                                新規紹介時に付与されるボーナスの割合
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                売上ボーナス率<span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-input" id="salesRate" 
+                                       value="8" step="0.1" min="0" max="50">
+                                <span class="input-suffix">%</span>
+                            </div>
+                            <div class="form-help">
+                                売上実績に対するボーナスの割合
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                継続ボーナス率<span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-input" id="retentionRate" 
+                                       value="5" step="0.1" min="0" max="30">
+                                <span class="input-suffix">%</span>
+                            </div>
+                            <div class="form-help">
+                                継続利用に対するボーナスの割合
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                最低支払額<span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-input" id="minimumPayment" 
+                                       value="5000" step="100" min="1000" max="50000">
+                                <span class="input-suffix">円</span>
+                            </div>
+                            <div class="form-help">
+                                支払処理を実行する最低金額
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- タイトル別報酬設定セクション -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-crown"></i>
+                        タイトル別報酬設定
+                    </div>
+                    <div class="section-description">
+                        各タイトルに応じた固定報酬額を設定します
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>タイトル名</th>
+                                    <th>ランク</th>
+                                    <th>固定報酬額</th>
+                                    <th>達成条件</th>
+                                    <th>ステータス</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>ブロンズパートナー</strong></td>
+                                    <td>Lv.1</td>
+                                    <td>
+                                        <input type="number" class="form-input" 
+                                               value="10000" step="1000" min="0">
+                                    </td>
+                                    <td>紹介5名以上</td>
+                                    <td><span class="status-badge status-active">有効</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>シルバーパートナー</strong></td>
+                                    <td>Lv.2</td>
+                                    <td>
+                                        <input type="number" class="form-input" 
+                                               value="25000" step="1000" min="0">
+                                    </td>
+                                    <td>紹介15名以上</td>
+                                    <td><span class="status-badge status-active">有効</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ゴールドパートナー</strong></td>
+                                    <td>Lv.3</td>
+                                    <td>
+                                        <input type="number" class="form-input" 
+                                               value="50000" step="1000" min="0">
+                                    </td>
+                                    <td>紹介30名以上</td>
+                                    <td><span class="status-badge status-active">有効</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>プラチナパートナー</strong></td>
+                                    <td>Lv.4</td>
+                                    <td>
+                                        <input type="number" class="form-input" 
+                                               value="100000" step="1000" min="0">
+                                    </td>
+                                    <td>紹介50名以上</td>
+                                    <td><span class="status-badge status-active">有効</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-top: 16px;">
+                        <button class="btn btn-secondary" onclick="addTitleRow()">
+                            <i class="fas fa-plus"></i>
+                            新しいタイトルを追加
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 変更理由・保存セクション -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-edit"></i>
+                        変更理由・保存
+                    </div>
+                    <div class="section-description">
+                        設定変更の理由を記録し、設定を保存します
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="form-group">
+                        <label class="form-label">
+                            変更理由<span class="required">*</span>
+                        </label>
+                        <textarea class="form-textarea" id="changeReason" 
+                                  placeholder="設定変更の理由を詳しく記入してください（必須）"
+                                  rows="4"></textarea>
+                        <div class="form-help">
+                            変更履歴に記録され、監査の際に参照されます
+                        </div>
+                    </div>
+
+                    <div class="actions-bar">
+                        <div class="actions-left">
+                            <div class="loading" id="loadingIndicator">
+                                <div class="spinner"></div>
+                                設定を保存中...
+                            </div>
+                        </div>
+                        <div class="actions-right">
+                            <button class="btn btn-secondary" onclick="previewChanges()">
+                                <i class="fas fa-eye"></i>
+                                変更内容を確認
+                            </button>
+                            <button class="btn btn-success" onclick="saveSettings()">
+                                <i class="fas fa-save"></i>
+                                設定を保存
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 変更履歴セクション -->
+            <div class="section-card history-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-history"></i>
+                        設定変更履歴
+                    </div>
+                    <div class="section-description">
+                        過去の設定変更を確認できます
+                    </div>
+                </div>
+                <div class="section-content">
+                    <button class="history-toggle" onclick="toggleHistory()">
+                        <i class="fas fa-chevron-down" id="historyIcon"></i>
+                        履歴を表示
+                    </button>
+                    
+                    <div class="history-content" id="historyContent">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>変更日時</th>
+                                        <th>変更者</th>
+                                        <th>変更項目</th>
+                                        <th>変更前</th>
+                                        <th>変更後</th>
+                                        <th>理由</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>2025-08-23 14:30</td>
+                                        <td>管理者A</td>
+                                        <td>紹介ボーナス率</td>
+                                        <td>10%</td>
+                                        <td>15%</td>
+                                        <td>競合対策のための引き上げ</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning" onclick="rollbackSetting('hist001')">
+                                                <i class="fas fa-undo"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>2025-08-20 09:15</td>
+                                        <td>管理者B</td>
+                                        <td>最低支払額</td>
+                                        <td>3000円</td>
+                                        <td>5000円</td>
+                                        <td>処理コスト削減のため</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning" onclick="rollbackSetting('hist002')">
+                                                <i class="fas fa-undo"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>2025-08-18 16:45</td>
+                                        <td>管理者C</td>
+                                        <td>ゴールドパートナー報酬</td>
+                                        <td>40000円</td>
+                                        <td>50000円</td>
+                                        <td>インセンティブ強化施策</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning" onclick="rollbackSetting('hist003')">
+                                                <i class="fas fa-undo"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ページ機能のJavaScript
+        let isHistoryVisible = false;
+
+        function toggleHistory() {
+            const content = document.getElementById('historyContent');
+            const icon = document.getElementById('historyIcon');
+            
+            if (!isHistoryVisible) {
+                content.classList.add('show');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                isHistoryVisible = true;
+            } else {
+                content.classList.remove('show');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                isHistoryVisible = false;
+            }
+        }
+
+        function previewChanges() {
+            const changes = gatherChanges();
+            const changeReason = document.getElementById('changeReason').value;
+            
+            if (!changeReason.trim()) {
+                alert('変更理由を入力してください。');
+                document.getElementById('changeReason').focus();
+                return;
+            }
+
+            let previewMessage = '以下の設定が変更されます：\n\n';
+            
+            if (changes.bonusRates.length > 0) {
+                previewMessage += '【ボーナス率】\n';
+                changes.bonusRates.forEach(change => {
+                    previewMessage += `• ${change.name}: ${change.oldValue}% → ${change.newValue}%\n`;
+                });
+                previewMessage += '\n';
+            }
+
+            if (changes.titleRewards.length > 0) {
+                previewMessage += '【タイトル別報酬】\n';
+                changes.titleRewards.forEach(change => {
+                    previewMessage += `• ${change.name}: ${change.oldValue.toLocaleString()}円 → ${change.newValue.toLocaleString()}円\n`;
+                });
+                previewMessage += '\n';
+            }
+
+            if (changes.minimumPayment) {
+                previewMessage += '【最低支払額】\n';
+                previewMessage += `• ${changes.minimumPayment.oldValue.toLocaleString()}円 → ${changes.minimumPayment.newValue.toLocaleString()}円\n\n`;
+            }
+
+            previewMessage += `【変更理由】\n${changeReason}`;
+
+            if (confirm(previewMessage + '\n\nこの内容で保存しますか？')) {
+                saveSettings();
+            }
+        }
+
+        function gatherChanges() {
+            // 実際のAPIでは現在値と比較して変更点を抽出
+            return {
+                bonusRates: [
+                    { name: '紹介ボーナス率', oldValue: 10, newValue: 15 }
+                ],
+                titleRewards: [
+                    { name: 'ゴールドパートナー', oldValue: 40000, newValue: 50000 }
+                ],
+                minimumPayment: { oldValue: 3000, newValue: 5000 }
+            };
+        }
+
+        function saveSettings() {
+            const changeReason = document.getElementById('changeReason').value;
+            
+            if (!changeReason.trim()) {
+                alert('変更理由を入力してください。');
+                document.getElementById('changeReason').focus();
+                return;
+            }
+
+            // ローディング表示
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.style.display = 'block';
+
+            // 設定データ収集
+            const settingsData = {
+                bonusRates: {
+                    referral: parseFloat(document.getElementById('referralRate').value),
+                    sales: parseFloat(document.getElementById('salesRate').value),
+                    retention: parseFloat(document.getElementById('retentionRate').value)
+                },
+                minimumPayment: parseInt(document.getElementById('minimumPayment').value),
+                changeReason: changeReason,
+                titleRewards: gatherTitleRewards()
+            };
+
+            // API呼び出し（モック）
+            setTimeout(() => {
+                loadingIndicator.style.display = 'none';
+                alert('設定が正常に保存されました。');
+                
+                // 変更理由をクリア
+                document.getElementById('changeReason').value = '';
+                
+                // 履歴更新（実際のAPIでは再読み込み）
+                location.reload();
+            }, 2000);
+        }
+
+        function gatherTitleRewards() {
+            const rewards = [];
+            const rows = document.querySelectorAll('.data-table tbody tr');
+            
+            rows.forEach(row => {
+                const titleName = row.cells[0].textContent.trim();
+                const amountInput = row.cells[2].querySelector('input');
+                if (amountInput) {
+                    rewards.push({
+                        title: titleName,
+                        amount: parseInt(amountInput.value)
+                    });
+                }
+            });
+            
+            return rewards;
+        }
+
+        function addTitleRow() {
+            const tbody = document.querySelector('.data-table tbody');
+            const newRow = document.createElement('tr');
+            
+            newRow.innerHTML = `
+                <td><input type="text" class="form-input" placeholder="新しいタイトル名"></td>
+                <td>
+                    <select class="form-select">
+                        <option>Lv.5</option>
+                        <option>Lv.6</option>
+                        <option>Lv.7</option>
+                    </select>
+                </td>
+                <td><input type="number" class="form-input" value="0" step="1000" min="0"></td>
+                <td><input type="text" class="form-input" placeholder="達成条件"></td>
+                <td><span class="status-badge status-inactive">未保存</span></td>
+                <td>
+                    <button class="btn btn-sm btn-success" onclick="saveTitleRow(this)">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="removeTitleRow(this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(newRow);
+        }
+
+        function saveTitleRow(button) {
+            // 実際のAPIでは保存処理
+            const row = button.closest('tr');
+            const statusBadge = row.querySelector('.status-badge');
+            statusBadge.className = 'status-badge status-active';
+            statusBadge.textContent = '有効';
+            
+            // ボタンを保存アイコンに変更
+            button.innerHTML = '<i class="fas fa-save"></i>';
+            button.className = 'btn btn-sm btn-primary';
+        }
+
+        function removeTitleRow(button) {
+            if (confirm('このタイトルを削除しますか？')) {
+                button.closest('tr').remove();
+            }
+        }
+
+        function rollbackSetting(historyId) {
+            if (confirm('この設定値に戻しますか？\n現在の設定が上書きされます。')) {
+                alert(`設定ID: ${historyId} の状態に復元されました。`);
+                location.reload();
+            }
+        }
+
+        function exportSettings() {
+            const settings = {
+                bonusRates: {
+                    referral: document.getElementById('referralRate').value,
+                    sales: document.getElementById('salesRate').value,
+                    retention: document.getElementById('retentionRate').value
+                },
+                minimumPayment: document.getElementById('minimumPayment').value,
+                titleRewards: gatherTitleRewards(),
+                exportedAt: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `master-settings-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function resetToDefault() {
+            if (confirm('デフォルト設定に戻しますか？\n現在の設定が失われます。')) {
+                document.getElementById('referralRate').value = '10';
+                document.getElementById('salesRate').value = '5';
+                document.getElementById('retentionRate').value = '3';
+                document.getElementById('minimumPayment').value = '3000';
+                alert('デフォルト設定に復元されました。保存してください。');
+            }
+        }
+
+        // ページ読み込み時の処理
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('P-007 マスター設定ページが読み込まれました');
+            
+            // フォーム validation
+            const numberInputs = document.querySelectorAll('input[type="number"]');
+            numberInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.value < parseFloat(this.min) || this.value > parseFloat(this.max)) {
+                        this.style.borderColor = 'var(--error-red)';
+                    } else {
+                        this.style.borderColor = 'var(--border-color)';
+                    }
+                });
+            });
+
+            // 変更理由入力チェック
+            document.getElementById('changeReason').addEventListener('input', function() {
+                const saveButton = document.querySelector('.btn-success');
+                if (this.value.trim()) {
+                    saveButton.disabled = false;
+                    saveButton.style.opacity = '1';
+                } else {
+                    saveButton.disabled = true;
+                    saveButton.style.opacity = '0.6';
+                }
+            });
+
+            // 初期状態では保存ボタンを無効化
+            document.querySelector('.btn-success').disabled = true;
+            document.querySelector('.btn-success').style.opacity = '0.6';
+        });
+    </script>
+</body>
+</html>

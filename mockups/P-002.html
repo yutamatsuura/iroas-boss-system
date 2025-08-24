@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-002 会員管理システム - IROAS BOSS System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #2563eb;
+            --primary-blue-dark: #1d4ed8;
+            --primary-blue-light: #3b82f6;
+            --sidebar-dark: #1e293b;
+            --sidebar-darker: #0f172a;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-white: #ffffff;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --border-light: #e2e8f0;
+            --border-medium: #cbd5e1;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Layout */
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, var(--sidebar-dark) 0%, var(--sidebar-darker) 100%);
+            color: var(--text-white);
+            box-shadow: var(--shadow-lg);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-white);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar-subtitle {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 0.25rem;
+        }
+
+        .sidebar-nav {
+            padding: 1.5rem 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.875rem 1.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-white);
+        }
+
+        .nav-item.active {
+            background-color: rgba(37, 99, 235, 0.2);
+            color: var(--text-white);
+            border-left-color: var(--primary-blue);
+        }
+
+        .nav-item i {
+            width: 1.25rem;
+            margin-right: 0.75rem;
+            font-size: 1.125rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            background-color: var(--bg-light);
+        }
+
+        .header {
+            background: var(--bg-white);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .page-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .breadcrumb {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        /* Content Area */
+        .content {
+            padding: 2rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-white);
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-light);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.primary {
+            background-color: rgba(37, 99, 235, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .stat-icon.success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .stat-icon.warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .stat-icon.danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        .stat-change.negative {
+            color: var(--danger);
+        }
+
+        /* Search and Filters */
+        .filters-section {
+            background: var(--bg-white);
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-light);
+            margin-bottom: 2rem;
+        }
+
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .filters-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input,
+        .form-select {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            background: var(--bg-white);
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .search-input {
+            position: relative;
+        }
+
+        .search-input i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .search-input input {
+            padding-left: 2.75rem;
+        }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-blue);
+            color: var(--text-white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-blue-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-white);
+            color: var(--text-primary);
+            border: 1px solid var(--border-medium);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-light);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: var(--text-white);
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: var(--text-white);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: var(--text-white);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+        }
+
+        /* Table */
+        .table-section {
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .table th {
+            background-color: var(--bg-light);
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table td {
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .table tbody tr:hover {
+            background-color: var(--bg-light);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 9999px;
+            white-space: nowrap;
+        }
+
+        .status-badge.active {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-badge.inactive {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .status-badge.pending {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .action-btn.edit {
+            background-color: rgba(37, 99, 235, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .action-btn.edit:hover {
+            background-color: rgba(37, 99, 235, 0.2);
+        }
+
+        .action-btn.delete {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .action-btn.delete:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .pagination-info {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .pagination-btn {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-medium);
+            background-color: var(--bg-white);
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover {
+            background-color: var(--bg-light);
+        }
+
+        .pagination-btn.active {
+            background-color: var(--primary-blue);
+            color: var(--text-white);
+            border-color: var(--primary-blue);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .table-container {
+                font-size: 0.75rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">
+                <i class="fas fa-crown"></i>
+                IROAS BOSS
+            </div>
+            <div class="sidebar-subtitle">Management System</div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i>
+                ダッシュボード
+            </a>
+            <a href="#" class="nav-item active">
+                <i class="fas fa-users"></i>
+                会員管理
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-bar"></i>
+                売上分析
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-shopping-cart"></i>
+                注文管理
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-box"></i>
+                商品管理
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i>
+                システム設定
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div>
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="page-title">
+                        <i class="fas fa-users"></i>
+                        会員管理システム
+                    </h1>
+                    <div class="breadcrumb">
+                        ホーム > 会員管理 > 一覧
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary">
+                        <i class="fas fa-download"></i>
+                        エクスポート
+                    </button>
+                    <button class="btn btn-primary" onclick="openModal('addMemberModal')">
+                        <i class="fas fa-plus"></i>
+                        新規会員登録
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">総会員数</div>
+                        <div class="stat-icon primary">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">44</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i>
+                        +2名 (今月)
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">アクティブ会員</div>
+                        <div class="stat-icon success">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">38</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i>
+                        86.4%
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">新規会員</div>
+                        <div class="stat-icon warning">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">5</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i>
+                        今月の登録
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">停止中会員</div>
+                        <div class="stat-icon danger">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">6</div>
+                    <div class="stat-change negative">
+                        <i class="fas fa-arrow-down"></i>
+                        13.6%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="filters-section">
+                <div class="filters-header">
+                    <h3 class="filters-title">検索・フィルタ</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="clearFilters()">
+                        <i class="fas fa-times"></i>
+                        クリア
+                    </button>
+                </div>
+                <div class="filters-grid">
+                    <div class="form-group">
+                        <label class="form-label">検索</label>
+                        <div class="search-input">
+                            <i class="fas fa-search"></i>
+                            <input type="text" class="form-input" id="searchInput" placeholder="会員番号、氏名、メールで検索...">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ステータス</label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="">すべて</option>
+                            <option value="active">アクティブ</option>
+                            <option value="inactive">停止中</option>
+                            <option value="pending">承認待ち</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">称号</label>
+                        <select class="form-select" id="titleFilter">
+                            <option value="">すべて</option>
+                            <option value="platinum">プラチナ</option>
+                            <option value="gold">ゴールド</option>
+                            <option value="silver">シルバー</option>
+                            <option value="bronze">ブロンズ</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button class="btn btn-primary" onclick="applyFilters()">
+                            <i class="fas fa-filter"></i>
+                            フィルタ適用
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Member List Table -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h3 class="table-title">会員一覧 (44名)</h3>
+                    <div class="table-actions">
+                        <button class="btn btn-secondary btn-sm">
+                            <i class="fas fa-sync"></i>
+                            更新
+                        </button>
+                        <button class="btn btn-secondary btn-sm">
+                            <i class="fas fa-columns"></i>
+                            列設定
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="table" id="membersTable">
+                        <thead>
+                            <tr>
+                                <th>会員番号</th>
+                                <th>氏名</th>
+                                <th>メールアドレス</th>
+                                <th>称号</th>
+                                <th>ステータス</th>
+                                <th>登録日</th>
+                                <th>最終ログイン</th>
+                                <th>アクション</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersTableBody">
+                            <!-- Sample data will be generated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <div class="pagination-info">
+                        1-20 of 44 items
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="pagination-btn" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="pagination-btn active">1</button>
+                        <button class="pagination-btn">2</button>
+                        <button class="pagination-btn">3</button>
+                        <button class="pagination-btn">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div class="modal-overlay" id="addMemberModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">新規会員登録</h3>
+                <button class="modal-close" onclick="closeModal('addMemberModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addMemberForm">
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label class="form-label">会員番号 *</label>
+                            <input type="text" class="form-input" id="memberNumber" required placeholder="IR-0001">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">氏名 *</label>
+                            <input type="text" class="form-input" id="memberName" required placeholder="山田 太郎">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">メールアドレス *</label>
+                            <input type="email" class="form-input" id="memberEmail" required placeholder="example@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">称号</label>
+                            <select class="form-select" id="memberTitle">
+                                <option value="bronze">ブロンズ</option>
+                                <option value="silver">シルバー</option>
+                                <option value="gold">ゴールド</option>
+                                <option value="platinum">プラチナ</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">ステータス</label>
+                            <select class="form-select" id="memberStatus">
+                                <option value="active">アクティブ</option>
+                                <option value="pending">承認待ち</option>
+                                <option value="inactive">停止中</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">電話番号</label>
+                            <input type="tel" class="form-input" id="memberPhone" placeholder="090-1234-5678">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addMemberModal')">
+                    キャンセル
+                </button>
+                <button class="btn btn-primary" onclick="saveMember()">
+                    <i class="fas fa-save"></i>
+                    保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        <!--
+        【CF_06引き継ぎ情報】
+        UI要件: 44名のIROAS会員管理システム - 検索・フィルタリング・CRUD操作
+        必要API: 
+          - GET /api/members - 会員一覧取得（検索・フィルタ対応）
+          - POST /api/members - 新規会員登録
+          - PUT /api/members/{id} - 会員情報更新
+          - DELETE /api/members/{id} - 会員削除
+          - GET /api/members/stats - 統計情報取得
+        入力データ: { memberNumber: string, name: string, email: string, title: enum, status: enum, phone?: string }
+        出力データ: { id: number, memberNumber: string, name: string, email: string, title: string, status: string, createdAt: date, lastLogin?: date }
+        UI文脈: 検索・フィルタによる動的表示、モーダルでのCRUD操作、リアルタイム統計更新
+        特記事項: ページネーション対応、バリデーション、レスポンシブデザイン
+        -->
+
+        // Sample member data for demonstration
+        const sampleMembers = [
+            {
+                id: 1,
+                memberNumber: 'IR-0001',
+                name: '田中 一郎',
+                email: 'tanaka@example.com',
+                title: 'platinum',
+                status: 'active',
+                createdAt: '2024-01-15',
+                lastLogin: '2025-08-23'
+            },
+            {
+                id: 2,
+                memberNumber: 'IR-0002',
+                name: '佐藤 花子',
+                email: 'sato@example.com',
+                title: 'gold',
+                status: 'active',
+                createdAt: '2024-02-20',
+                lastLogin: '2025-08-22'
+            },
+            {
+                id: 3,
+                memberNumber: 'IR-0003',
+                name: '鈴木 太郎',
+                email: 'suzuki@example.com',
+                title: 'silver',
+                status: 'inactive',
+                createdAt: '2024-03-10',
+                lastLogin: '2025-07-15'
+            },
+            {
+                id: 4,
+                memberNumber: 'IR-0004',
+                name: '高橋 美咲',
+                email: 'takahashi@example.com',
+                title: 'bronze',
+                status: 'active',
+                createdAt: '2024-04-05',
+                lastLogin: '2025-08-24'
+            },
+            {
+                id: 5,
+                memberNumber: 'IR-0005',
+                name: '伊藤 大輔',
+                email: 'ito@example.com',
+                title: 'gold',
+                status: 'pending',
+                createdAt: '2024-05-12',
+                lastLogin: null
+            }
+        ];
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            renderMembersTable(sampleMembers);
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Search input
+            document.getElementById('searchInput').addEventListener('input', function() {
+                applyFilters();
+            });
+
+            // Filter selects
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+            document.getElementById('titleFilter').addEventListener('change', applyFilters);
+
+            // Modal close on outside click
+            document.getElementById('addMemberModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal('addMemberModal');
+                }
+            });
+        }
+
+        function renderMembersTable(members) {
+            const tableBody = document.getElementById('membersTableBody');
+            tableBody.innerHTML = '';
+
+            members.forEach(member => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${member.memberNumber}</td>
+                    <td>${member.name}</td>
+                    <td>${member.email}</td>
+                    <td>${getTitleBadge(member.title)}</td>
+                    <td>${getStatusBadge(member.status)}</td>
+                    <td>${formatDate(member.createdAt)}</td>
+                    <td>${member.lastLogin ? formatDate(member.lastLogin) : '-'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn edit" onclick="editMember(${member.id})" title="編集">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete" onclick="deleteMember(${member.id})" title="削除">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function getTitleBadge(title) {
+            const titles = {
+                'platinum': { text: 'プラチナ', class: 'primary' },
+                'gold': { text: 'ゴールド', class: 'warning' },
+                'silver': { text: 'シルバー', class: 'secondary' },
+                'bronze': { text: 'ブロンズ', class: 'danger' }
+            };
+            const titleInfo = titles[title] || { text: title, class: 'secondary' };
+            return `<span class="status-badge ${titleInfo.class}">${titleInfo.text}</span>`;
+        }
+
+        function getStatusBadge(status) {
+            const statuses = {
+                'active': { text: 'アクティブ', class: 'active' },
+                'inactive': { text: '停止中', class: 'inactive' },
+                'pending': { text: '承認待ち', class: 'pending' }
+            };
+            const statusInfo = statuses[status] || { text: status, class: 'pending' };
+            return `<span class="status-badge ${statusInfo.class}">${statusInfo.text}</span>`;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ja-JP');
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const titleFilter = document.getElementById('titleFilter').value;
+
+            let filteredMembers = sampleMembers.filter(member => {
+                const matchesSearch = !searchTerm || 
+                    member.memberNumber.toLowerCase().includes(searchTerm) ||
+                    member.name.toLowerCase().includes(searchTerm) ||
+                    member.email.toLowerCase().includes(searchTerm);
+                
+                const matchesStatus = !statusFilter || member.status === statusFilter;
+                const matchesTitle = !titleFilter || member.title === titleFilter;
+
+                return matchesSearch && matchesStatus && matchesTitle;
+            });
+
+            renderMembersTable(filteredMembers);
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('titleFilter').value = '';
+            renderMembersTable(sampleMembers);
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+
+        function saveMember() {
+            const form = document.getElementById('addMemberForm');
+            const formData = new FormData(form);
+            
+            // Here you would normally send the data to your API
+            console.log('Saving member:', Object.fromEntries(formData));
+            
+            // Show success message and close modal
+            alert('会員が正常に登録されました');
+            closeModal('addMemberModal');
+            form.reset();
+        }
+
+        function editMember(memberId) {
+            // Here you would open an edit modal or navigate to edit page
+            console.log('Editing member:', memberId);
+            alert(`会員ID: ${memberId} の編集機能は開発中です`);
+        }
+
+        function deleteMember(memberId) {
+            if (confirm('この会員を削除しますか？')) {
+                // Here you would call the delete API
+                console.log('Deleting member:', memberId);
+                alert(`会員ID: ${memberId} を削除しました`);
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Close sidebar on outside click in mobile view
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const menuBtn = document.querySelector('.mobile-menu-btn');
+            
+            if (window.innerWidth <= 1024 && 
+                !sidebar.contains(e.target) && 
+                !menuBtn.contains(e.target) &&
+                sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+            }
+        });
+    </script>
+</body>
+</html>

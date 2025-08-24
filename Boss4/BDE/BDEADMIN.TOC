@@ -1,0 +1,59 @@
+:Base BDEADMIN.HLP>main
+:Title BDE Administrator ヘルプ
+:Index BDE Administrator ヘルプ=BDEADMIN.HLP
+:Link bde32.hlp
+:Link datapump.hlp
+:Link localsql.hlp
+:Link sqllnk32.hlp
+;
+1 BDE Administrator ヘルプ
+2 BDE Administrator について（概要） =dbxoverview
+2 BDE Administrator ユーザーインターフェース
+3 BDE Administrator ウィンドウ =thedbexploreruserinterface
+3 記号 =colorcodedsymbols
+3 キー =keycommands
+3 BDE Administrator ツールバー =usingbdeadminspeedbar
+3 タブ付きページ（左ペイン）
+4 ［データベース］ページ =databases
+4 ［環境設定］ページ =idh_idapi_configutil
+3 タブ付きページ（右ペイン）
+4 ページ =tabbedpages
+4 ［定義］ページ =definitionpage
+3 メニューコマンド
+4 メニューコマンド =menubarcommands
+4 ［オブジェクト］コマンド =objectmenubarcommands
+4 ［編集］コマンド =editmenubarcommands
+4 ［表示］コマンド =viewmenubarcommands
+4 ［オプション］コマンド =optionsmenubarcommands
+4 ［ヘルプ］コマンド =helpmenubarcommands
+2 データベースに関するトピック
+3 ［データベース］ページ =databases
+3 データベースエリアスの使用 =workingwithdatabasealiases
+2 BDE 環境設定に関するトピック
+3 ［環境設定］ページ =idh_idapi_configutil
+3 環境設定情報の保存 =savingconfigurationinformation
+3 Microsoft ODBC  の環境設定
+4 ODBC（Open Database Connectivity）の環境設定 =configuringmicrosoftopendatabaseconnectivityodbc
+4 ODBC 環境設定ファイルの設定 =configuringtheodbcconfigurationfile
+4 ODBC 用 BDE 環境設定ファイルの設定 =configuringthebdeconfigurationfileforodbc
+4 ODBC ソケット環境設定エントリ =odbcsocketconfigurationentries
+4 AutoODBC =autoodbc
+3 BDE 環境設定ファイルの設定
+4 System の設定
+5 ［System｜INIT］の設定 =idh_idapi_sysmgr
+5 Format の設定
+6 ［System｜Formats｜Date］の設定 =idh_idapi_datemgr
+6 ［System｜Formats｜Time］の設定 =idh_idapi_timemgr
+6 ［System｜Formats｜Number］の設定 =idh_idapi_numbermgr
+4 Drivers の設定
+5 ［Drivers］の設定 =idh_idapi_drivermgr
+5 Microsoft Access ドライバの設定 =idh_idapi_driversaccess
+5 Paradox ドライバの設定 =idh_idapi_driverspdox
+5 dBASE，FoxPro ドライバの設定 =idh_idapi_driversdbase
+5 ODBC ドライバ接続の設定 =idh_idapi_driversodbc
+5 Sybase ドライバの設定 =idh_idapi_driverssybase
+5 Oracle ドライバの設定 =idh_idapi_driversoracle
+5 Informix ドライバの設定 =idh_idapi_driversinformix
+5 InterBase ドライバの設定 =idh_idapi_driversinterbase
+5 Microsoft SQL Server ドライバの設定 =idh_idapi_driversmssql
+5 DB2 ドライバの設定 =idh_idapi_driversdb2

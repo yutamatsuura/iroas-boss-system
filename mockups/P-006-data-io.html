@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-006 データ入出力ページ - BOSS System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --accent-color: #3b82f6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--secondary-color);
+            border: 2px solid #e2e8f0;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .status-success { color: var(--success-color); }
+        .status-error { color: var(--error-color); }
+        .status-pending { color: var(--warning-color); }
+        
+        .file-drop-zone {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            background: #f9fafb;
+            transition: all 0.2s ease;
+        }
+        
+        .file-drop-zone:hover,
+        .file-drop-zone.dragover {
+            border-color: var(--primary-color);
+            background: #eff6ff;
+        }
+        
+        .progress-bar {
+            background: #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, var(--success-color) 0%, var(--accent-color) 100%);
+            height: 8px;
+            transition: width 0.3s ease;
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                color: #e2e8f0;
+            }
+            
+            .card {
+                background: #1e293b;
+                border-color: #334155;
+                color: #e2e8f0;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="card mx-6 mt-6 p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="bg-blue-100 p-3 rounded-xl">
+                    <i class="fas fa-exchange-alt text-2xl text-blue-600"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">データ入出力管理</h1>
+                    <p class="text-gray-600">Univapay/GMO用CSV生成と決済結果取込</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="text-sm text-gray-600">
+                    最終更新: <span class="font-semibold">2025-08-24 16:43</span>
+                </div>
+                <button class="btn-secondary">
+                    <i class="fas fa-history mr-2"></i>履歴
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- CSV生成セクション -->
+            <div class="lg:col-span-2">
+                <div class="card p-6 mb-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                            <i class="fas fa-file-export text-blue-600 mr-3"></i>CSV生成
+                        </h2>
+                        <div class="flex space-x-2">
+                            <select id="csvType" class="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium">
+                                <option value="univapay-card">Univapayカード決済</option>
+                                <option value="univapay-bank">Univapay口座振替</option>
+                                <option value="gmo-transfer">GMO振込</option>
+                            </select>
+                            <button class="btn-primary" onclick="generateCSV()">
+                                <i class="fas fa-download mr-2"></i>生成
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- フィルター条件 -->
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">抽出条件</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">期間(開始)</label>
+                                <input type="date" id="startDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">期間(終了)</label>
+                                <input type="date" id="endDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">ステータス</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option value="all">全て</option>
+                                    <option value="pending">未処理</option>
+                                    <option value="completed">完了</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 生成プレビュー -->
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                        <i class="fas fa-table text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 mb-2">生成されるCSVのプレビュー</p>
+                        <div id="csvPreview" class="text-xs font-mono bg-gray-100 p-3 rounded text-left max-h-32 overflow-y-auto hidden">
+                            <!-- プレビューがここに表示される -->
+                        </div>
+                        <p class="text-sm text-gray-500">条件を設定して「生成」をクリックしてください</p>
+                    </div>
+                </div>
+
+                <!-- 決済結果取込セクション -->
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                            <i class="fas fa-file-import text-green-600 mr-3"></i>決済結果取込
+                        </h2>
+                        <button class="btn-secondary" onclick="showUploadHistory()">
+                            <i class="fas fa-clock mr-2"></i>取込履歴
+                        </button>
+                    </div>
+
+                    <!-- ファイルアップロード -->
+                    <div class="file-drop-zone p-8 text-center mb-4" 
+                         ondrop="handleDrop(event)" 
+                         ondragover="handleDragOver(event)" 
+                         ondragenter="handleDragEnter(event)" 
+                         ondragleave="handleDragLeave(event)">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-lg font-semibold text-gray-700 mb-2">決済結果CSVファイルをドロップ</p>
+                        <p class="text-sm text-gray-500 mb-4">または</p>
+                        <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-folder-open mr-2"></i>ファイルを選択
+                        </button>
+                        <input type="file" id="fileInput" class="hidden" accept=".csv" onchange="handleFileSelect(event)">
+                        <p class="text-xs text-gray-500 mt-2">対応形式: CSV (最大10MB)</p>
+                    </div>
+
+                    <!-- アップロード進行状況 -->
+                    <div id="uploadProgress" class="hidden mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">アップロード中...</span>
+                            <span class="text-sm font-medium text-gray-700">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- 取込結果プレビュー -->
+                    <div id="importResult" class="hidden">
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                                <div>
+                                    <p class="text-sm font-semibold text-green-800">取込完了</p>
+                                    <p class="text-xs text-green-700">処理件数: <span id="processedCount">0</span>件</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- サイドバー -->
+            <div class="space-y-6">
+                <!-- 処理状況 -->
+                <div class="card p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fas fa-chart-line text-purple-600 mr-3"></i>処理状況
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-file-export text-blue-600 mr-3"></i>
+                                <span class="text-sm font-medium">CSV生成</span>
+                            </div>
+                            <span class="text-sm font-semibold text-blue-600">24件</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-file-import text-green-600 mr-3"></i>
+                                <span class="text-sm font-medium">結果取込</span>
+                            </div>
+                            <span class="text-sm font-semibold text-green-600">18件</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
+                                <span class="text-sm font-medium">エラー</span>
+                            </div>
+                            <span class="text-sm font-semibold text-yellow-600">2件</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近の履歴 -->
+                <div class="card p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fas fa-history text-gray-600 mr-3"></i>最近の履歴
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Univapayカード</p>
+                                <p class="text-xs text-gray-500">2025-08-24 15:30</p>
+                            </div>
+                            <span class="status-success"><i class="fas fa-check-circle"></i></span>
+                        </div>
+                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">GMO振込結果</p>
+                                <p class="text-xs text-gray-500">2025-08-24 14:15</p>
+                            </div>
+                            <span class="status-success"><i class="fas fa-check-circle"></i></span>
+                        </div>
+                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">口座振替CSV</p>
+                                <p class="text-xs text-gray-500">2025-08-24 13:45</p>
+                            </div>
+                            <span class="status-error"><i class="fas fa-times-circle"></i></span>
+                        </div>
+                        <div class="flex items-center justify-between py-2">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">決済結果取込</p>
+                                <p class="text-xs text-gray-500">2025-08-24 12:20</p>
+                            </div>
+                            <span class="status-pending"><i class="fas fa-clock"></i></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- クイックアクション -->
+                <div class="card p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fas fa-lightning-bolt text-yellow-600 mr-3"></i>クイックアクション
+                    </h3>
+                    <div class="space-y-3">
+                        <button class="w-full btn-secondary text-left" onclick="quickAction('template')">
+                            <i class="fas fa-file-download mr-3"></i>テンプレートDL
+                        </button>
+                        <button class="w-full btn-secondary text-left" onclick="quickAction('batch')">
+                            <i class="fas fa-tasks mr-3"></i>一括処理実行
+                        </button>
+                        <button class="w-full btn-secondary text-left" onclick="quickAction('validation')">
+                            <i class="fas fa-shield-alt mr-3"></i>データ検証
+                        </button>
+                        <button class="w-full btn-secondary text-left" onclick="quickAction('backup')">
+                            <i class="fas fa-database mr-3"></i>バックアップ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM要素の参照を取得
+        const csvTypeSelect = document.getElementById('csvType');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const csvPreview = document.getElementById('csvPreview');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const importResult = document.getElementById('importResult');
+        const fileInput = document.getElementById('fileInput');
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 今日の日付を設定
+            const today = new Date().toISOString().split('T')[0];
+            endDateInput.value = today;
+            
+            // 1週間前を開始日に設定
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            startDateInput.value = weekAgo.toISOString().split('T')[0];
+        });
+
+        // CSV生成機能
+        function generateCSV() {
+            const csvType = csvTypeSelect.value;
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+
+            // プレビュー表示
+            let previewContent = '';
+            switch(csvType) {
+                case 'univapay-card':
+                    previewContent = '"3","00000000400","10670","JPY"\n"3","00000001700","10670","JPY"';
+                    break;
+                case 'univapay-bank':
+                    previewContent = '1015483,6600,9,銀行名,285,1,7172077,口座名,10670\n1015513,8200,1,銀行名,130,1,8074778,口座名,10670';
+                    break;
+                case 'gmo-transfer':
+                    previewContent = '振替データNo,振替日,顧客データNo,銀行コード,銀行名,支店コード\n2815292,2025/05/27,1079943,0005694,PayPay銀行,001';
+                    break;
+            }
+            
+            csvPreview.textContent = previewContent;
+            csvPreview.classList.remove('hidden');
+
+            // 実際のCSV生成APIを呼び出し（モックアップでは省略）
+            console.log(`CSV生成: ${csvType}, 期間: ${startDate} - ${endDate}`);
+            
+            // 成功メッセージ表示
+            showNotification('CSVファイルが生成されました', 'success');
+        }
+
+        // ファイルドロップ処理
+        function handleDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+        }
+
+        function handleDragEnter(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        // ファイル処理
+        function processFile(file) {
+            if (!file.name.endsWith('.csv')) {
+                showNotification('CSVファイルを選択してください', 'error');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) { // 10MB
+                showNotification('ファイルサイズが10MBを超えています', 'error');
+                return;
+            }
+
+            // アップロード進行状況を表示
+            uploadProgress.classList.remove('hidden');
+            importResult.classList.add('hidden');
+
+            // プログレスバーのアニメーション
+            simulateUpload(() => {
+                uploadProgress.classList.add('hidden');
+                importResult.classList.remove('hidden');
+                
+                // ランダムな処理件数を表示
+                const processedCount = Math.floor(Math.random() * 100) + 50;
+                document.getElementById('processedCount').textContent = processedCount;
+                
+                showNotification('決済結果の取込が完了しました', 'success');
+            });
+        }
+
+        // アップロード進行状況のシミュレーション
+        function simulateUpload(callback) {
+            let progress = 0;
+            const progressBar = document.querySelector('.progress-fill');
+            const progressText = uploadProgress.querySelector('span:last-child');
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    setTimeout(callback, 500);
+                }
+                
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${Math.floor(progress)}%`;
+            }, 200);
+        }
+
+        // 通知表示
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+                type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+                'bg-blue-100 text-blue-800 border border-blue-200'
+            }`;
+            
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${
+                        type === 'success' ? 'check-circle' :
+                        type === 'error' ? 'exclamation-circle' :
+                        'info-circle'
+                    } mr-3"></i>
+                    <span>${message}</span>
+                    <button class="ml-4" onclick="this.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // その他の機能
+        function showUploadHistory() {
+            showNotification('取込履歴を表示中...', 'info');
+            // 履歴モーダルを開く処理（実装省略）
+        }
+
+        function quickAction(action) {
+            switch(action) {
+                case 'template':
+                    showNotification('テンプレートファイルをダウンロードしました', 'success');
+                    break;
+                case 'batch':
+                    showNotification('一括処理を実行中...', 'info');
+                    break;
+                case 'validation':
+                    showNotification('データ検証を開始しました', 'info');
+                    break;
+                case 'backup':
+                    showNotification('バックアップを実行中...', 'info');
+                    break;
+            }
+        }
+    </script>
+
+    <!--
+    【CF_06引き継ぎ情報】
+    UI要件: CSV生成（Univapayカード/口座振替、GMO振込）、決済結果取込、履歴管理
+    必要API: 
+    - POST /api/csv/generate - CSV生成
+    - POST /api/payment-results/import - 決済結果取込
+    - GET /api/data-io/history - 処理履歴取得
+    - GET /api/data-io/stats - 処理統計取得
+    入力データ: { 
+      csvGenerate: { type: string, startDate: string, endDate: string, status?: string },
+      fileImport: { file: File },
+      historyQuery: { page?: number, limit?: number }
+    }
+    出力データ: { 
+      csvFile: Blob,
+      importResult: { processedCount: number, errors?: Array },
+      history: Array<{ id: string, type: string, timestamp: string, status: string }>,
+      stats: { csvGenerated: number, resultsImported: number, errors: number }
+    }
+    UI文脈: データ入出力管理画面、CSV生成とファイル取込、リアルタイム進行状況表示
+    特記事項: ファイルアップロード進行状況、CSV形式検証、10MB制限、ドラッグ&ドロップ対応
+    -->
+</body>
+</html>

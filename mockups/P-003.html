@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-003 組織図 - BOSS System</title>
+    <style>
+        :root {
+            /* Modern Corporate Design Theme */
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --border-color: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --bg-primary: #111827;
+            --bg-secondary: #1f2937;
+            --border-color: #374151;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+        }
+
+        .control-panel-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .control-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-select, .form-input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            min-width: 200px;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border-color);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Tree Container */
+        .tree-container {
+            background-color: var(--bg-primary);
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .tree-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tree-info {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        /* Binary Tree */
+        .binary-tree {
+            padding: 2rem;
+            overflow: auto;
+            min-height: 600px;
+        }
+
+        .tree-level {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .tree-level-1 { justify-content: center; }
+        .tree-level-2 { justify-content: space-around; }
+        .tree-level-3 { justify-content: space-around; }
+        .tree-level-4 { justify-content: space-around; }
+
+        /* Member Node */
+        .member-node {
+            background-color: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            min-width: 180px;
+            text-align: center;
+            position: relative;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .member-node:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .member-node.active {
+            border-color: var(--primary-color);
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+
+        .member-node.gold {
+            border-color: var(--warning-color);
+            background-color: rgba(245, 158, 11, 0.05);
+        }
+
+        .member-node.silver {
+            border-color: #6b7280;
+            background-color: rgba(107, 114, 128, 0.05);
+        }
+
+        .member-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--bg-secondary);
+            margin: 0 auto 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .member-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .member-id {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .member-rank {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .rank-gold {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
+
+        .rank-silver {
+            background-color: rgba(107, 114, 128, 0.1);
+            color: #6b7280;
+        }
+
+        .rank-bronze {
+            background-color: rgba(168, 85, 247, 0.1);
+            color: #8b5cf6;
+        }
+
+        .member-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Tree Lines */
+        .tree-line {
+            position: absolute;
+            background-color: var(--border-color);
+            z-index: 1;
+        }
+
+        .tree-line.vertical {
+            width: 2px;
+            height: 40px;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .tree-line.horizontal {
+            height: 2px;
+            top: -40px;
+            left: 25%;
+            right: 25%;
+        }
+
+        /* Empty Node */
+        .empty-node {
+            background-color: var(--bg-secondary);
+            border: 2px dashed var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            min-width: 180px;
+            text-align: center;
+            color: var(--text-secondary);
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .empty-node:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+
+            .control-panel-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .form-select, .form-input {
+                min-width: auto;
+                width: 100%;
+            }
+
+            .member-node, .empty-node {
+                min-width: 140px;
+                padding: 0.75rem;
+            }
+
+            .tree-info {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Dark Mode Toggle */
+        .theme-toggle {
+            width: 50px;
+            height: 24px;
+            background-color: var(--border-color);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .theme-toggle.active {
+            background-color: var(--primary-color);
+        }
+
+        .theme-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .theme-toggle.active::after {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <!--
+    【CF_06引き継ぎ情報】
+    UI要件: バイナリーツリー形式でMLM組織構造を表示、特定会員起点での表示切り替え、会員詳細情報の表示
+    必要API: 
+    - GET /api/organization/tree/{member_id} - 指定会員を起点とした組織ツリー取得
+    - GET /api/members/search - 会員検索（起点変更用）
+    - GET /api/members/{member_id}/details - 会員詳細情報取得
+    入力データ: { 
+        member_id: string,
+        depth: number (表示階層数),
+        search_query: string
+    }
+    出力データ: { 
+        tree: {
+            root: Member,
+            left_branch: Member[],
+            right_branch: Member[],
+            stats: {
+                total_members: number,
+                active_members: number,
+                total_volume: number
+            }
+        }
+    }
+    UI文脈: 起点会員選択→ツリー表示更新→会員ノードクリックで詳細表示→起点変更可能
+    特記事項: リアルタイム更新対応、大規模組織対応のための仮想スクロール実装推奨
+    -->
+    
+    <div class="header">
+        <div class="header-content">
+            <h1 class="page-title">組織図 - バイナリーツリー</h1>
+            <div class="header-controls">
+                <div class="theme-toggle" id="themeToggle"></div>
+                <button class="btn btn-secondary" id="helpBtn">ヘルプ</button>
+                <button class="btn btn-primary" id="exportBtn">エクスポート</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div class="control-panel-content">
+            <div class="control-group">
+                <label class="control-label">起点会員</label>
+                <select class="form-select" id="rootMemberSelect">
+                    <option value="M001">田中太郎 (M001)</option>
+                    <option value="M002">佐藤花子 (M002)</option>
+                    <option value="M003">鈴木一郎 (M003)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">会員検索</label>
+                <input type="text" class="form-input" placeholder="会員名またはIDで検索..." id="memberSearch">
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">表示階層</label>
+                <select class="form-select" id="depthSelect">
+                    <option value="3">3階層</option>
+                    <option value="4" selected>4階層</option>
+                    <option value="5">5階層</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">フィルター</label>
+                <select class="form-select" id="filterSelect">
+                    <option value="all">全て</option>
+                    <option value="active">アクティブのみ</option>
+                    <option value="gold">ゴールド以上</option>
+                </select>
+            </div>
+            
+            <button class="btn btn-primary" id="refreshBtn">更新</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="tree-container">
+            <div class="tree-header">
+                <div class="tree-info">
+                    <div class="info-item">
+                        <div class="info-label">総会員数</div>
+                        <div class="info-value">47</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">アクティブ</div>
+                        <div class="info-value">32</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">月間売上</div>
+                        <div class="info-value">¥2.4M</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">左系列</div>
+                        <div class="info-value">23</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">右系列</div>
+                        <div class="info-value">24</div>
+                    </div>
+                </div>
+                
+                <div class="header-controls">
+                    <button class="btn btn-secondary" id="expandAllBtn">全て展開</button>
+                    <button class="btn btn-secondary" id="collapseAllBtn">折りたたみ</button>
+                </div>
+            </div>
+            
+            <div class="binary-tree" id="binaryTree">
+                <!-- Level 1: Root -->
+                <div class="tree-level tree-level-1">
+                    <div class="member-node active gold">
+                        <div class="member-avatar">田</div>
+                        <div class="member-name">田中太郎</div>
+                        <div class="member-id">M001</div>
+                        <div class="member-rank rank-gold">ゴールドランク</div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">23</div>
+                                <div>左系列</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">24</div>
+                                <div>右系列</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Level 2: Left and Right -->
+                <div class="tree-level tree-level-2">
+                    <div class="member-node silver">
+                        <div class="tree-line vertical"></div>
+                        <div class="member-avatar">佐</div>
+                        <div class="member-name">佐藤花子</div>
+                        <div class="member-id">M002</div>
+                        <div class="member-rank rank-silver">シルバーランク</div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">8</div>
+                                <div>左系列</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">15</div>
+                                <div>右系列</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="member-node">
+                        <div class="tree-line vertical"></div>
+                        <div class="member-avatar">鈴</div>
+                        <div class="member-name">鈴木一郎</div>
+                        <div class="member-id">M003</div>
+                        <div class="member-rank rank-bronze">ブロンズランク</div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">12</div>
+                                <div>左系列</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">12</div>
+                                <div>右系列</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Level 3: Four nodes -->
+                <div class="tree-level tree-level-3">
+                    <div class="member-node">
+                        <div class="tree-line vertical"></div>
+                        <div class="member-avatar">高</div>
+                        <div class="member-name">高橋美咲</div>
+                        <div class="member-id">M004</div>
+                        <div class="member-rank rank-bronze">ブロンズランク</div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">3</div>
+                                <div>左系列</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">5</div>
+                                <div>右系列</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="member-node">
+                        <div class="tree-line vertical"></div>
+                        <div class="member-avatar">山</div>
+                        <div class="member-name">山田健太</div>
+                        <div class="member-id">M005</div>
+                        <div class="member-rank rank-bronze">ブロンズランク</div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">7</div>
+                                <div>左系列</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">8</div>
+                                <div>右系列</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="member-node">
+                        <div class="tree-line vertical"></div>
+                        <div class="member-avatar">中</div>
+                        <div class="member-name">中村由美</div>
+                        <div class="member-id">M006</div>
+                        <div class="member-rank rank-bronze">ブロンズランク</div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">6</div>
+                                <div>左系列</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">6</div>
+                                <div>右系列</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="empty-node">
+                        <div class="tree-line vertical"></div>
+                        <div>空きポジション</div>
+                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">クリックして招待</div>
+                    </div>
+                </div>
+                
+                <!-- Level 4: Eight nodes -->
+                <div class="tree-level tree-level-4">
+                    <div class="member-node">
+                        <div class="tree-line vertical"></div>
+                        <div class="member-avatar">小</div>
+                        <div class="member-name">小林直樹</div>
+                        <div class="member-id">M007</div>
+                        <div class="member-rank rank-bronze">ブロンズランク</div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">1</div>
+                                <div>左系列</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">2</div>
+                                <div>右系列</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="empty-node">
+                        <div class="tree-line vertical"></div>
+                        <div>空きポジション</div>
+                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">クリックして招待</div>
+                    </div>
+                    
+                    <div class="member-node">
+                        <div class="tree-line vertical"></div>
+                        <div class="member-avatar">加</div>
+                        <div class="member-name">加藤真理</div>
+                        <div class="member-id">M008</div>
+                        <div class="member-rank rank-bronze">ブロンズランク</div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">3</div>
+                                <div>左系列</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">4</div>
+                                <div>右系列</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="member-node">
+                        <div class="tree-line vertical"></div>
+                        <div class="member-avatar">吉</div>
+                        <div class="member-name">吉田明子</div>
+                        <div class="member-id">M009</div>
+                        <div class="member-rank rank-bronze">ブロンズランク</div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">4</div>
+                                <div>左系列</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">4</div>
+                                <div>右系列</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="member-node">
+                        <div class="tree-line vertical"></div>
+                        <div class="member-avatar">松</div>
+                        <div class="member-name">松本隆司</div>
+                        <div class="member-id">M010</div>
+                        <div class="member-rank rank-bronze">ブロンズランク</div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">3</div>
+                                <div>左系列</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">3</div>
+                                <div>右系列</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="empty-node">
+                        <div class="tree-line vertical"></div>
+                        <div>空きポジション</div>
+                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">クリックして招待</div>
+                    </div>
+                    
+                    <div class="empty-node">
+                        <div class="tree-line vertical"></div>
+                        <div>空きポジション</div>
+                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">クリックして招待</div>
+                    </div>
+                    
+                    <div class="empty-node">
+                        <div class="tree-line vertical"></div>
+                        <div>空きポジション</div>
+                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">クリックして招待</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // テーマ切り替え
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        themeToggle.addEventListener('click', () => {
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                themeToggle.classList.remove('active');
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                themeToggle.classList.add('active');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+        
+        // テーマの復元
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            body.setAttribute('data-theme', 'dark');
+            themeToggle.classList.add('active');
+        }
+        
+        // 会員ノードのクリックイベント
+        document.querySelectorAll('.member-node').forEach(node => {
+            node.addEventListener('click', (e) => {
+                // 既存のアクティブ状態をリセット
+                document.querySelectorAll('.member-node').forEach(n => n.classList.remove('active'));
+                // クリックされたノードをアクティブに
+                node.classList.add('active');
+                
+                // 詳細情報の表示（モーダルやサイドパネルで実装予定）
+                const memberId = node.querySelector('.member-id').textContent;
+                console.log(`会員詳細表示: ${memberId}`);
+            });
+        });
+        
+        // 空きノードのクリックイベント
+        document.querySelectorAll('.empty-node').forEach(node => {
+            node.addEventListener('click', () => {
+                // 招待フォームの表示（モーダルで実装予定）
+                console.log('新規会員招待フォームを表示');
+            });
+        });
+        
+        // コントロールパネルのイベント
+        document.getElementById('rootMemberSelect').addEventListener('change', (e) => {
+            console.log(`起点会員変更: ${e.target.value}`);
+            // ツリー再描画処理
+        });
+        
+        document.getElementById('memberSearch').addEventListener('input', (e) => {
+            console.log(`会員検索: ${e.target.value}`);
+            // 検索結果表示処理
+        });
+        
+        document.getElementById('depthSelect').addEventListener('change', (e) => {
+            console.log(`表示階層変更: ${e.target.value}`);
+            // ツリー階層調整処理
+        });
+        
+        document.getElementById('filterSelect').addEventListener('change', (e) => {
+            console.log(`フィルター適用: ${e.target.value}`);
+            // フィルタリング処理
+        });
+        
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            console.log('データ更新');
+            // API再取得処理
+        });
+        
+        document.getElementById('expandAllBtn').addEventListener('click', () => {
+            console.log('全て展開');
+            // 全ノード展開処理
+        });
+        
+        document.getElementById('collapseAllBtn').addEventListener('click', () => {
+            console.log('折りたたみ');
+            // 全ノード折りたたみ処理
+        });
+        
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            console.log('エクスポート');
+            // PDF/Excel エクスポート処理
+        });
+        
+        document.getElementById('helpBtn').addEventListener('click', () => {
+            console.log('ヘルプ表示');
+            // ヘルプモーダル表示処理
+        });
+    </script>
+</body>
+</html>
